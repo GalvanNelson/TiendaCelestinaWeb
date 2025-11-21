@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+[x-cloak] {
+    display: none;
+}
+
+.btn {
+    @apply px-3 bg-gray-500 hover:bg-gray-800 rounded text-white uppercase
+}
+.btn-primary {
+    @apply px-3 bg-green-500 hover:bg-green-800 
+}
+.btn-success {
+    @apply px-3 bg-blue-500 hover:bg-blue-800 
+}
+.btn-danger {
+    @apply px-3 bg-red-500 hover:bg-red-800 
+}

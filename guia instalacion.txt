@@ -1,0 +1,25 @@
+
+tener instalado node y composer
+composer global require "laravel/installer"
+laravel new agendajet
+    which starter kit would you like to intall?
+    None
+    which testing framework do you prefer?
+    Pest
+    whitch database will your application use?
+    psql
+    default database update. would you like to run the default database migration?
+    No
+    would you like to run npm install and npm run build?
+    No
+
+configuramos en .env con las credenciales de la base de datos postgres correctas
+
+cd agendajet
+composer require laravel/jestream
+php artisan jeststream:install inertia --teams
+
+npm run install
+php artisan migrate
+npm run build
+php artisan server
