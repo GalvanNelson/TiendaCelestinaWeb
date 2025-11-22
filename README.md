@@ -65,3 +65,6 @@ The Laravel framework is open-sourced software licensed under the [MIT license](
 ### ROLES Y PERMISOS
 - composer require spatie/laravel-permission
 
+- ** Libreria de iconos 
+- npm install lucide-vue-next
+

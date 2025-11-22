@@ -24,4 +24,10 @@ Route::middleware([
         return Inertia::render('Dashboard');
     })->name('dashboard');
     Route::resource('dashboard/user', UserController::class);
+
+    Route::get('/users', [UserController::class, 'index'])->name('users.index');
+
+    Route::get('/settings', function() {
+        return inertia('Settings/Index');
+    })->name('settings.index');
 });
