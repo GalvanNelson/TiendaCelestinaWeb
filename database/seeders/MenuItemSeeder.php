@@ -30,6 +30,16 @@ class MenuItemSeeder extends Seeder
                 'order' => 2,
             ],
 
+            // Clientes
+            [
+                'name' => 'clientes',
+                'label' => 'Clientes',
+                'icon' => 'UserCheck',
+                'route' => 'clientes.index',
+                'permission' => 'view clients',
+                'order' => 3,
+            ],
+
             // Posts
            /* [
                 'name' => 'posts',
