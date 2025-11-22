@@ -68,3 +68,13 @@ The Laravel framework is open-sourced software licensed under the [MIT license](
 - ** Libreria de iconos 
 - npm install lucide-vue-next
 
+- npm i flowbite flowbite-vue
+
+
+## LIMPIAR CACHE
+php artisan config:clear
+php artisan cache:clear
+php artisan route:clear
+php artisan view:clear
+php artisan optimize:clear
+
