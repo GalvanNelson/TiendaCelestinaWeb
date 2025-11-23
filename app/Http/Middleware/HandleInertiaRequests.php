@@ -75,11 +75,18 @@ class HandleInertiaRequests extends Middleware
                 'permission' => EnumPermissionEnum::VIEW_CLIENTS->value, // o 'view_clients'
             ],
             [
-                'id' => 'users',
-                'label' => 'Usuarios',
-                'icon' => 'UserCog',
-                'route' => 'users.index',
-                'permission' => null,
+                'id' => 'productos',
+                'label' => 'Productos',
+                'icon' => 'Box',
+                'route' => 'productos.index',
+                'permission' => EnumPermissionEnum::VIEW_PRODUCTS->value,
+            ],
+            [
+                'id' => 'categorias',
+                'label' => 'Categorías',
+                'icon' => 'Tag',
+                'route' => 'productos.categorias.index',
+                'permission' => EnumPermissionEnum::VIEW_CATEGORIAS->value,
             ],
             [
                 'id' => 'settings',

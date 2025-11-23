@@ -1,7 +1,9 @@
 <?php
 
 use App\Enum\PermissionEnum;
+use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\ClienteController;
+use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\ProfileController; // Add this
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -41,33 +43,37 @@ Route::middleware([
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('clientes', [ClienteController::class, 'index'])->middleware('permission:' . PermissionEnum::VIEW_CLIENTS->value)->name('clientes.index');
-    Route::get('clientes/create', [ClienteController::class, 'create'])
-        ->middleware('permission:' . PermissionEnum::CREATE_CLIENTS->value)
-        ->name('clientes.create');
+    // ========================================
+    // CLIENTES
+    // ========================================
+    Route::get('clientes', [ClienteController::class, 'index'])
+        ->name('clientes.index')
+        ->middleware('permission:' . PermissionEnum::VIEW_CLIENTS->value);
+
     Route::post('clientes', [ClienteController::class, 'store'])
-        ->middleware('permission:' . PermissionEnum::CREATE_CLIENTS->value)
-        ->name('clientes.store');
-
-    // Editar clientes (DEBE IR ANTES de {cliente})
-    Route::get('clientes/{cliente}/edit', [ClienteController::class, 'edit'])
-        ->middleware('permission:' . PermissionEnum::EDIT_CLIENTS->value)
-        ->name('clientes.edit');
-
-    // Ver detalle de cliente (DEBE IR DESPUÉS de rutas específicas)
-    Route::get('clientes/{cliente}', [ClienteController::class, 'show'])
-        ->middleware('permission:' . PermissionEnum::VIEW_CLIENTS->value)
-        ->name('clientes.show');
+        ->name('clientes.store')
+        ->middleware('permission:' . PermissionEnum::CREATE_CLIENTS->value);
 
     Route::put('clientes/{cliente}', [ClienteController::class, 'update'])
-        ->middleware('permission:' . PermissionEnum::EDIT_CLIENTS->value)
-        ->name('clientes.update');
-
-    Route::patch('clientes/{cliente}', [ClienteController::class, 'update'])
+        ->name('clientes.update')
         ->middleware('permission:' . PermissionEnum::EDIT_CLIENTS->value);
 
-    // Eliminar clientes
     Route::delete('clientes/{cliente}', [ClienteController::class, 'destroy'])
-        ->middleware('permission:' . PermissionEnum::DELETE_CLIENTS->value)
-        ->name('clientes.destroy');
+        ->name('clientes.destroy')
+        ->middleware('permission:' . PermissionEnum::DELETE_CLIENTS->value);
+
+    // ========================================
+    // PRODUCTOS
+    // ========================================
+    Route::get('productos', [ProductoController::class, 'index'])->name('productos.index');
+    Route::post('productos', [ProductoController::class, 'store'])->name('productos.store');
+    Route::post('productos/{producto}', [ProductoController::class, 'update'])->name('productos.update');
+    Route::delete('productos/{producto}', [ProductoController::class, 'destroy'])->name('productos.destroy');
+
+    // ========================================
+    // CATEGORÍAS
+    // ========================================
+    Route::get('productos/categorias', [CategoriaController::class, 'index'])
+        ->middleware('permission:' . PermissionEnum::VIEW_CATEGORIAS->value)
+        ->name('productos.categorias.index');
 });
