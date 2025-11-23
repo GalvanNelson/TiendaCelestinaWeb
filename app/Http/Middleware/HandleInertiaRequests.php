@@ -2,9 +2,8 @@
 
 namespace App\Http\Middleware;
 
-use App\Enum\PermissionEnum as EnumPermissionEnum;
+use App\Enum\PermissionEnum;
 use Illuminate\Foundation\Inspiring;
-use App\Enums\PermissionEnum;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -72,21 +71,29 @@ class HandleInertiaRequests extends Middleware
                 'label' => 'Clientes',
                 'icon' => 'Users',
                 'route' => 'clientes.index',
-                'permission' => EnumPermissionEnum::VIEW_CLIENTS->value, // o 'view_clients'
+                'permission' => PermissionEnum::VIEW_CLIENTS->value, // o 'view_clients'
             ],
+            // Productos con submenu
             [
                 'id' => 'productos',
                 'label' => 'Productos',
-                'icon' => 'Box',
-                'route' => 'productos.index',
-                'permission' => EnumPermissionEnum::VIEW_PRODUCTS->value,
-            ],
-            [
-                'id' => 'categorias',
-                'label' => 'Categorías',
-                'icon' => 'Tag',
-                'route' => 'productos.categorias.index',
-                'permission' => EnumPermissionEnum::VIEW_CATEGORIAS->value,
+                'icon' => 'Package',
+                'children' => [
+                    [
+                        'id' => 'productos-list',
+                        'label' => 'Lista de Productos',
+                        'icon' => 'Package',
+                        'route' => 'productos.index',
+                        'permission' => PermissionEnum::VIEW_PRODUCTS->value,
+                    ],
+                    [
+                        'id' => 'productos-categorias',
+                        'label' => 'Categorías',
+                        'icon' => 'FolderOpen',
+                        'route' => 'productos.categorias.index',
+                        'permission' => PermissionEnum::VIEW_CATEGORIAS->value,
+                    ],
+                ],
             ],
             [
                 'id' => 'settings',

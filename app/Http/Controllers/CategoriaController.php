@@ -9,21 +9,19 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
 
-
 class CategoriaController extends Controller
 {
     use HasRolePermissionChecks;
+
     /**
-     * Display a listing of the resource.
+     * Mostrar lista de categorías
      */
     public function index(Request $request): InertiaResponse
     {
         $user = $request->user();
 
-        // Obtener query base
-        $query = Categoria::query();
+        $query = Categoria::withCount('productos');
 
-        // Aplicar filtro de búsqueda si existe
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
@@ -32,12 +30,11 @@ class CategoriaController extends Controller
             });
         }
 
-        // Obtener categorías paginadas
         $categorias = $query->orderBy('nombre')
             ->paginate(10)
             ->withQueryString();
 
-        return Inertia::render('productos/categorias/Index', [
+        return Inertia::render('Productos/Categorias/Index', [
             'categorias' => $categorias,
             'filters' => $request->only(['search']),
             'can' => [
@@ -49,50 +46,57 @@ class CategoriaController extends Controller
     }
 
     /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
+     * Guardar nueva categoría
      */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'nombre' => 'required|string|max:255|unique:categorias,nombre',
+            'descripcion' => 'nullable|string|max:1000',
+        ], [
+            'nombre.required' => 'El nombre es obligatorio.',
+            'nombre.unique' => 'Ya existe una categoría con este nombre.',
+            'descripcion.max' => 'La descripción no puede tener más de 1000 caracteres.',
+        ]);
+
+        Categoria::create($validated);
+
+        return redirect()->route('productos.categorias.index')
+            ->with('success', 'Categoría creada exitosamente.');
     }
 
     /**
-     * Display the specified resource.
-     */
-    public function show(Categoria $categoria)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Categoria $categoria)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
+     * Actualizar categoría
      */
     public function update(Request $request, Categoria $categoria)
     {
-        //
+        $validated = $request->validate([
+            'nombre' => 'required|string|max:255|unique:categorias,nombre,' . $categoria->codigo_categoria . ',codigo_categoria',
+            'descripcion' => 'nullable|string|max:1000',
+        ], [
+            'nombre.required' => 'El nombre es obligatorio.',
+            'nombre.unique' => 'Ya existe una categoría con este nombre.',
+            'descripcion.max' => 'La descripción no puede tener más de 1000 caracteres.',
+        ]);
+
+        $categoria->update($validated);
+
+        return redirect()->route('productos.categorias.index')
+            ->with('success', 'Categoría actualizada exitosamente.');
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Eliminar categoría
      */
     public function destroy(Categoria $categoria)
     {
-        //
+        try {
+            $categoria->delete();
+            return redirect()->route('productos.categorias.index')
+                ->with('success', 'Categoría eliminada exitosamente.');
+        } catch (\Exception $e) {
+            return redirect()->route('productos.categorias.index')
+                ->with('error', 'No se puede eliminar la categoría porque tiene productos asociados.');
+        }
     }
 }

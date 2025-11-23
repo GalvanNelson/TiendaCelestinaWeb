@@ -65,15 +65,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // ========================================
     // PRODUCTOS
     // ========================================
-    Route::get('productos', [ProductoController::class, 'index'])->name('productos.index');
-    Route::post('productos', [ProductoController::class, 'store'])->name('productos.store');
-    Route::post('productos/{producto}', [ProductoController::class, 'update'])->name('productos.update');
-    Route::delete('productos/{producto}', [ProductoController::class, 'destroy'])->name('productos.destroy');
+    Route::prefix('productos')->group(function () {
+        // Productos principales
+        Route::get('/', [ProductoController::class, 'index'])->name('productos.index');
+        Route::post('/', [ProductoController::class, 'store'])->name('productos.store');
+        Route::post('/{producto}', [ProductoController::class, 'update'])->name('productos.update');
+        Route::delete('/{producto}', [ProductoController::class, 'destroy'])->name('productos.destroy');
 
-    // ========================================
-    // CATEGORÍAS
-    // ========================================
-    Route::get('productos/categorias', [CategoriaController::class, 'index'])
-        ->middleware('permission:' . PermissionEnum::VIEW_CATEGORIAS->value)
-        ->name('productos.categorias.index');
+        // Categorías
+        Route::get('categorias', [CategoriaController::class, 'index'])->name('productos.categorias.index');
+        Route::post('categorias', [CategoriaController::class, 'store'])->name('productos.categorias.store');
+        Route::put('categorias/{categoria}', [CategoriaController::class, 'update'])->name('productos.categorias.update');
+        Route::delete('categorias/{categoria}', [CategoriaController::class, 'destroy'])->name('productos.categorias.destroy');
+    });
 });
