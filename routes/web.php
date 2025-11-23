@@ -4,7 +4,8 @@ use App\Enum\PermissionEnum;
 use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\ProductoController;
-use App\Http\Controllers\ProfileController; // Add this
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\UnidadMedidaController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -66,10 +67,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // PRODUCTOS
     // ========================================
     Route::prefix('productos')->group(function () {
-        // Productos principales
+        // Productos
         Route::get('/', [ProductoController::class, 'index'])->name('productos.index');
         Route::post('/', [ProductoController::class, 'store'])->name('productos.store');
-        Route::post('/{producto}', [ProductoController::class, 'update'])->name('productos.update');
+        Route::put('/{producto}', [ProductoController::class, 'update'])->name('productos.update');
         Route::delete('/{producto}', [ProductoController::class, 'destroy'])->name('productos.destroy');
 
         // Categorías
@@ -77,5 +78,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('categorias', [CategoriaController::class, 'store'])->name('productos.categorias.store');
         Route::put('categorias/{categoria}', [CategoriaController::class, 'update'])->name('productos.categorias.update');
         Route::delete('categorias/{categoria}', [CategoriaController::class, 'destroy'])->name('productos.categorias.destroy');
+
+        // Unidades de Medida
+        Route::get('unidades', [UnidadMedidaController::class, 'index'])->name('productos.unidades.index');
+        Route::post('unidades', [UnidadMedidaController::class, 'store'])->name('productos.unidades.store');
+        Route::put('unidades/{unidade}', [UnidadMedidaController::class, 'update'])->name('productos.unidades.update');
+        Route::delete('unidades/{unidade}', [UnidadMedidaController::class, 'destroy'])->name('productos.unidades.destroy');
     });
 });
