@@ -40,6 +40,26 @@ class MenuItemSeeder extends Seeder
                 'order' => 3,
             ],
 
+            // Productos
+            [
+                'name' => 'productos',
+                'label' => 'Productos',
+                'icon' => 'Box',
+                'route' => 'productos.index',
+                'permission' => 'view products',
+                'order' => 4,
+            ],
+
+            // Categorías
+            [
+                'name' => 'categorias',
+                'label' => 'Categorías',
+                'icon' => 'Tag',
+                'route' => 'productos.categorias.index',
+                'permission' => 'view categorias',
+                'order' => 5,
+            ],
+
             // Posts
            /* [
                 'name' => 'posts',

@@ -68,10 +68,10 @@
                 <template #content>
                   <div class="px-4 py-3 border-b border-gray-100">
                     <div class="text-sm font-medium text-gray-900">
-                      {{ $page.props.auth.user?.name }}
+                      {{ $page.props.auth?.user?.name }}
                     </div>
                     <div class="text-xs text-gray-500 mt-0.5">
-                      {{ $page.props.auth.user?.email }}
+                      {{ $page.props.auth?.user?.email }}
                     </div>
                     <div v-if="userRoles.length" class="mt-2 flex flex-wrap gap-1">
                       <span

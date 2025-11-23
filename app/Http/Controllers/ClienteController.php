@@ -15,18 +15,21 @@ class ClienteController extends Controller
 {
     use HasRolePermissionChecks;
 
+    /**
+     * Mostrar lista de clientes
+     */
     public function index(Request $request): InertiaResponse
     {
-
         $user = $request->user();
 
         $clienteRole = Role::where('name', RoleEnum::CLIENTE->value)->first();
+
         $clientes = User::whereHas('roles', function ($query) use ($clienteRole) {
             $query->where('role_id', $clienteRole->id);
         })
-        ->orderBy('id','desc')
+        ->orderBy('id', 'desc')
         ->paginate(10)
-        ->through(function ($cliente){
+        ->through(function ($cliente) {
             return [
                 'id' => $cliente->id,
                 'nombre' => $cliente->name,
@@ -48,16 +51,10 @@ class ClienteController extends Controller
                 'delete' => $user->hasPermission(PermissionEnum::DELETE_CLIENTS->value),
             ],
         ]);
-
-    }
-
-    public function create(): InertiaResponse
-    {
-        return Inertia::render('Clientes/Create');
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Guardar nuevo cliente
      */
     public function store(Request $request)
     {
@@ -92,6 +89,11 @@ class ClienteController extends Controller
 
         // Asignar rol de Cliente
         $clienteRole = Role::where('name', RoleEnum::CLIENTE->value)->first();
+
+        if (!$clienteRole) {
+            return back()->with('error', 'El rol de cliente no existe.');
+        }
+
         $cliente->roles()->attach($clienteRole->id);
 
         return redirect()->route('clientes.index')
@@ -99,69 +101,13 @@ class ClienteController extends Controller
     }
 
     /**
-     * Display the specified resource.
-     */
-    public function show(Request $request, User $cliente): InertiaResponse
-    {
-        $user = $request->user();
-
-        // Verificar que el usuario sea un cliente
-        if (!$cliente->hasRole(RoleEnum::CLIENTE->value)) {
-            abort(404);
-        }
-
-        return Inertia::render('clientes/Show', [
-            'cliente' => [
-                'id' => $cliente->id,
-                'nombre' => $cliente->name,
-                'apellido' => $cliente->apellido,
-                'nombre_completo' => $cliente->full_name,
-                'email' => $cliente->email,
-                'telefono' => $cliente->telefono,
-                'domicilio' => $cliente->domicilio,
-                'email_verified_at' => $cliente->email_verified_at,
-                'created_at' => $cliente->created_at,
-                'updated_at' => $cliente->updated_at,
-            ],
-            'can' => [
-                'edit' => $user->hasPermission(PermissionEnum::EDIT_CLIENTS->value),
-                'delete' => $user->hasPermission(PermissionEnum::DELETE_CLIENTS->value),
-            ],
-        ]);
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Request $request, User $cliente): InertiaResponse
-    {
-        $user = $request->user();
-
-        // Verificar que el usuario sea un cliente
-        if (!$cliente->hasRole(RoleEnum::CLIENTE->value)) {
-            abort(404);
-        }
-
-        return Inertia::render('clientes/Edit', [
-            'cliente' => [
-                'id' => $cliente->id,
-                'nombre' => $cliente->name,
-                'apellido' => $cliente->apellido,
-                'email' => $cliente->email,
-                'telefono' => $cliente->telefono,
-                'domicilio' => $cliente->domicilio,
-            ],
-        ]);
-    }
-
-    /**
-     * Update the specified resource in storage.
+     * Actualizar cliente
      */
     public function update(Request $request, User $cliente)
     {
         // Verificar que el usuario sea un cliente
         if (!$cliente->hasRole(RoleEnum::CLIENTE->value)) {
-            abort(404);
+            abort(404, 'Cliente no encontrado.');
         }
 
         $validated = $request->validate([
@@ -197,26 +143,29 @@ class ClienteController extends Controller
             ]);
         }
 
-        return redirect()->route('clientes.show', $cliente->id)
+        return redirect()->route('clientes.index')
             ->with('success', 'Cliente actualizado exitosamente.');
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Eliminar cliente
      */
     public function destroy(User $cliente)
     {
         // Verificar que el usuario sea un cliente
         if (!$cliente->hasRole(RoleEnum::CLIENTE->value)) {
-            abort(404);
+            abort(404, 'Cliente no encontrado.');
         }
 
-        // Eliminar el cliente
-        $cliente->delete();
+        try {
+            // Eliminar el cliente
+            $cliente->delete();
 
-        return redirect()->route('clientes.index')
-            ->with('success', 'Cliente eliminado exitosamente.');
+            return redirect()->route('clientes.index')
+                ->with('success', 'Cliente eliminado exitosamente.');
+        } catch (\Exception $e) {
+            return redirect()->route('clientes.index')
+                ->with('error', 'No se pudo eliminar el cliente. Error: ' . $e->getMessage());
+        }
     }
-
-
 }
