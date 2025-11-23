@@ -93,6 +93,13 @@ class HandleInertiaRequests extends Middleware
                         'route' => 'productos.categorias.index',
                         'permission' => PermissionEnum::VIEW_CATEGORIAS->value,
                     ],
+                    [
+                        'id' => 'productos-unidades',
+                        'label' => 'Unidades de Medida',
+                        'icon' => 'Ruler',
+                        'route' => 'productos.unidades.index',
+                        'permission' => PermissionEnum::VIEW_UNIDADES->value,
+                    ],
                 ],
             ],
             [
