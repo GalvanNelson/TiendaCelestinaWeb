@@ -70,6 +70,9 @@ The Laravel framework is open-sourced software licensed under the [MIT license](
 
 - npm i flowbite flowbite-vue
 
+### Actualizar las rutas en las vistas
+php artisan ziggy:generate
+
 
 ## LIMPIAR CACHE
 php artisan config:clear

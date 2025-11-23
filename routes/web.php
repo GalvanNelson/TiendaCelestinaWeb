@@ -3,6 +3,7 @@
 use App\Enum\PermissionEnum;
 use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\ClienteController;
+use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\ProfileController; // Add this
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -61,11 +62,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('clientes.destroy')
         ->middleware('permission:' . PermissionEnum::DELETE_CLIENTS->value);
 
+    // ========================================
+    // PRODUCTOS
+    // ========================================
+    Route::get('productos', [ProductoController::class, 'index'])->name('productos.index');
+    Route::post('productos', [ProductoController::class, 'store'])->name('productos.store');
+    Route::post('productos/{producto}', [ProductoController::class, 'update'])->name('productos.update');
+    Route::delete('productos/{producto}', [ProductoController::class, 'destroy'])->name('productos.destroy');
 
     // ========================================
     // CATEGORÍAS
     // ========================================
     Route::get('productos/categorias', [CategoriaController::class, 'index'])
         ->middleware('permission:' . PermissionEnum::VIEW_CATEGORIAS->value)
-        ->name('categorias.index');
+        ->name('productos.categorias.index');
 });
