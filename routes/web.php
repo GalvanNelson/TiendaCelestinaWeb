@@ -3,6 +3,7 @@
 use App\Enum\PermissionEnum;
 use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\ClienteController;
+use App\Http\Controllers\EntradaStockController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UnidadMedidaController;
@@ -84,5 +85,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('unidades', [UnidadMedidaController::class, 'store'])->name('productos.unidades.store');
         Route::put('unidades/{unidade}', [UnidadMedidaController::class, 'update'])->name('productos.unidades.update');
         Route::delete('unidades/{unidade}', [UnidadMedidaController::class, 'destroy'])->name('productos.unidades.destroy');
+
+        // Entradas de Stock
+        Route::get('entradas-stock', [EntradaStockController::class, 'index'])->name('productos.entradas-stock.index');
+        Route::post('entradas-stock', [EntradaStockController::class, 'store'])->name('productos.entradas-stock.store');
+        Route::put('entradas-stock/{codigo_entrada}', [EntradaStockController::class, 'update'])->name('productos.entradas-stock.update');
+        Route::delete('entradas-stock/{codigo_entrada}', [EntradaStockController::class, 'destroy'])->name('productos.entradas-stock.destroy');
+
     });
 });

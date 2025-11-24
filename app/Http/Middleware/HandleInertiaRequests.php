@@ -100,6 +100,13 @@ class HandleInertiaRequests extends Middleware
                         'route' => 'productos.unidades.index',
                         'permission' => PermissionEnum::VIEW_UNIDADES->value,
                     ],
+                    [
+                        'id' => 'productos-entradas',
+                        'label' => 'Entradas de Stock',
+                        'icon' => 'TrendingUp',
+                        'route' => 'productos.entradas-stock.index',
+                        'permission' => PermissionEnum::VIEW_ENTRADAS_STOCK->value,
+                    ],
                 ],
             ],
             [
