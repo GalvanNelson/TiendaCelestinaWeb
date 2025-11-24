@@ -13,32 +13,50 @@ class Producto extends Model
     public $incrementing = true;
     protected $keyType = 'int';
 
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var list<string>
+     */
     protected $fillable = [
+        'codigo_producto',
         'nombre',
-        'descripcion',
+        'imagen',
         'precio_unitario',
         'stock',
         'categoria_codigo',
         'unidad_codigo',
-        'imagen',
     ];
 
     /**
-     * Obtener la clave de ruta para el modelo
+     * Relación con Categoria
      */
-    public function getRouteKeyName()
-    {
-        return 'codigo_producto';
-    }
-
-    // Relaciones
     public function categoria()
     {
         return $this->belongsTo(Categoria::class, 'categoria_codigo', 'codigo_categoria');
     }
 
+    /**
+     * Relación con UnidadMedida
+     */
     public function unidadMedida()
     {
-        return $this->belongsTo(UnidadMedida::class, 'unidad_codigo', 'codigo_unidad');
+        return $this->belongsTo(UnidadMedida::class, 'unidad_codigo', 'codigo_medida');
+    }
+
+    /**
+     * Relación con EntradaStock
+     */
+    public function entradasStock()
+    {
+        return $this->hasMany(EntradaStock::class, 'codigo_producto', 'codigo_producto');
+    }
+
+    /**
+     * Relación con SalidaStock
+     */
+    public function salidasStock()
+    {
+        //return $this->hasMany(SalidaStock::class, 'codigo_producto', 'codigo_producto');
     }
 }
