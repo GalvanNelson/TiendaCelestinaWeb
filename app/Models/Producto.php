@@ -57,6 +57,6 @@ class Producto extends Model
      */
     public function salidasStock()
     {
-        //return $this->hasMany(SalidaStock::class, 'codigo_producto', 'codigo_producto');
+        return $this->hasMany(SalidaStock::class, 'codigo_producto', 'codigo_producto');
     }
 }

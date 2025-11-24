@@ -6,6 +6,7 @@ use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\EntradaStockController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SalidaStockController;
 use App\Http\Controllers\UnidadMedidaController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -91,6 +92,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('entradas-stock', [EntradaStockController::class, 'store'])->name('productos.entradas-stock.store');
         Route::put('entradas-stock/{codigo_entrada}', [EntradaStockController::class, 'update'])->name('productos.entradas-stock.update');
         Route::delete('entradas-stock/{codigo_entrada}', [EntradaStockController::class, 'destroy'])->name('productos.entradas-stock.destroy');
+
+         // Salidas de Stock
+        Route::get('salidas-stock', [SalidaStockController::class, 'index'])->name('productos.salidas-stock.index');
+        Route::post('salidas-stock', [SalidaStockController::class, 'store'])->name('productos.salidas-stock.store');
+        Route::put('salidas-stock/{codigo_salida}', [SalidaStockController::class, 'update'])->name('productos.salidas-stock.update');
+        Route::delete('salidas-stock/{codigo_salida}', [SalidaStockController::class, 'destroy'])->name('productos.salidas-stock.destroy');
+
 
     });
 });
