@@ -67,6 +67,18 @@ enum PermissionEnum: string
     case EDIT_SALIDAS_STOCK = 'edit_salidas_stock';
     case DELETE_SALIDAS_STOCK = 'delete_salidas_stock';
 
+    // Gestión de Pagos
+    case VIEW_PAGOS = 'view_pagos';
+    case CREATE_PAGOS = 'create_pagos';
+    case EDIT_PAGOS = 'edit_pagos';
+    case DELETE_PAGOS = 'delete_pagos';
+
+    // Gestión de Cuentas por Cobrar
+    case VIEW_CUENTAS_COBRAR = 'view_cuentas_cobrar';
+    case CREATE_CUENTAS_COBRAR = 'create_cuentas_cobrar';
+    case EDIT_CUENTAS_COBRAR = 'edit_cuentas_cobrar';
+    case DELETE_CUENTAS_COBRAR = 'delete_cuentas_cobrar';
+
     public static function values(): array
     {
         return array_column(self::cases(), 'value');
@@ -126,6 +138,16 @@ enum PermissionEnum: string
             self::CREATE_SALIDAS_STOCK => 'Crear Salidas de Stock',
             self::EDIT_SALIDAS_STOCK => 'Editar Salidas de Stock',
             self::DELETE_SALIDAS_STOCK => 'Eliminar Salidas de Stock',
+
+            self::VIEW_PAGOS => 'Ver Pagos',
+            self::CREATE_PAGOS => 'Crear Pagos',
+            self::EDIT_PAGOS => 'Editar Pagos',
+            self::DELETE_PAGOS => 'Eliminar Pagos',
+
+            self::VIEW_CUENTAS_COBRAR => 'Ver Cuentas por Cobrar',
+            self::CREATE_CUENTAS_COBRAR => 'Crear Cuentas por Cobrar',
+            self::EDIT_CUENTAS_COBRAR => 'Editar Cuentas por Cobrar',
+            self::DELETE_CUENTAS_COBRAR => 'Eliminar Cuentas por Cobrar',
         };
     }
 
@@ -183,6 +205,16 @@ enum PermissionEnum: string
             self::CREATE_SALIDAS_STOCK => 'Permite registrar nuevas salidas de stock',
             self::EDIT_SALIDAS_STOCK => 'Permite editar salidas de stock existentes',
             self::DELETE_SALIDAS_STOCK => 'Permite eliminar salidas de stock',
+
+            self::VIEW_PAGOS => 'Permite ver la lista de pagos',
+            self::CREATE_PAGOS => 'Permite registrar nuevos pagos',
+            self::EDIT_PAGOS => 'Permite editar pagos existentes',
+            self::DELETE_PAGOS => 'Permite eliminar pagos',
+
+            self::VIEW_CUENTAS_COBRAR => 'Permite ver la lista de cuentas por cobrar',
+            self::CREATE_CUENTAS_COBRAR => 'Permite crear nuevas cuentas por cobrar',
+            self::EDIT_CUENTAS_COBRAR => 'Permite editar cuentas por cobrar existentes',
+            self::DELETE_CUENTAS_COBRAR => 'Permite eliminar cuentas por cobrar',
         };
     }
 }

@@ -165,8 +165,8 @@ class VentaController extends Controller
 
                 // Crear detalle de venta
                 DetalleVenta::create([
-                    'venta' => $venta->codigo_venta,
-                    'producto' => $detalle['producto'],
+                    'venta_id' => $venta->codigo_venta,
+                    'producto_id' => $detalle['producto'],
                     'cantidad' => $detalle['cantidad'],
                     'precio_unitario' => $detalle['precio_unitario'],
                     'subtotal' => $subtotalDetalle,
@@ -188,7 +188,7 @@ class VentaController extends Controller
             // Si es a crédito, crear cuenta por cobrar
             if ($validated['tipo_pago'] === 'credito') {
                 CuentaPorCobrar::create([
-                    'venta' => $venta->codigo_venta,
+                    'venta_id' => $venta->codigo_venta,
                     'monto_total' => $total,
                     'monto_pagado' => 0,
                     'saldo_pendiente' => $total,

@@ -4,62 +4,48 @@ namespace App\Http\Controllers;
 
 use App\Models\Cuota;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class CuotaController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Marcar cuota como pagada
      */
-    public function index()
+    public function marcarPagada(Request $request, Cuota $cuota)
     {
-        //
+        $validated = $request->validate([
+            'fecha_pago' => 'required|date',
+        ], [
+            'fecha_pago.required' => 'La fecha de pago es obligatoria.',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $cuota->update([
+                'fecha_pago' => $validated['fecha_pago'],
+                'estado' => 'pagada',
+            ]);
+
+            DB::commit();
+
+            return redirect()->back()
+                ->with('success', 'Cuota marcada como pagada.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()
+                ->with('error', 'Error al marcar la cuota: ' . $e->getMessage());
+        }
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Actualizar estados de cuotas vencidas (comando programado)
      */
-    public function create()
+    public function actualizarEstadosVencidos()
     {
-        //
-    }
+        Cuota::where('estado', 'pendiente')
+            ->where('fecha_vencimiento', '<', now())
+            ->update(['estado' => 'vencida']);
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(Cuota $cuota)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Cuota $cuota)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Cuota $cuota)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Cuota $cuota)
-    {
-        //
+        return response()->json(['message' => 'Estados actualizados']);
     }
 }

@@ -1,233 +1,3 @@
-<script setup>
-import { ref, reactive, computed } from 'vue';
-import { useForm, router } from '@inertiajs/vue3';
-import { debounce } from 'lodash';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import Modal from '@/Components/Modal.vue';
-import Pagination from '@/Components/Pagination.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import SecondaryButton from '@/Components/SecondaryButton.vue';
-import DangerButton from '@/Components/DangerButton.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import TextInput from '@/Components/TextInput.vue';
-import { Plus, Eye, X, Loader, ShoppingCart, Trash2 } from 'lucide-vue-next';
-
-const props = defineProps({
-  ventas: Object,
-  clientes: Array,
-  productos: Array,
-  filters: Object,
-  can: Object
-});
-
-// Estados de los modales
-const showFormModal = ref(false);
-const showViewModal = ref(false);
-const showDeleteModal = ref(false);
-const selectedVenta = ref(null);
-
-// Formulario de búsqueda
-const searchForm = reactive({
-  search: props.filters?.search || '',
-  estado: props.filters?.estado || '',
-  tipo_pago: props.filters?.tipo_pago || ''
-});
-
-// Formulario principal
-const form = useForm({
-  cliente_id: '',
-  fecha_venta: new Date().toISOString().slice(0, 16),
-  tipo_pago: 'contado',
-  descuento: 0,
-  notas: '',
-  fecha_vencimiento: '',
-  detalles: []
-});
-
-const deleteForm = useForm({});
-
-// Computed
-const calcularSubtotal = computed(() => {
-  return form.detalles.reduce((sum, det) => {
-    const cantidad = parseFloat(det.cantidad) || 0;
-    const precio = parseFloat(det.precio_unitario) || 0;
-    return sum + (cantidad * precio);
-  }, 0);
-});
-
-const calcularTotal = computed(() => {
-  const descuento = parseFloat(form.descuento) || 0;
-  return calcularSubtotal.value - descuento;
-});
-
-// Funciones para abrir modales
-const openCreateModal = () => {
-  form.reset();
-  form.clearErrors();
-  form.cliente_id = '';
-  form.fecha_venta = new Date().toISOString().slice(0, 16);
-  form.tipo_pago = 'contado';
-  form.descuento = 0;
-  form.notas = '';
-  form.fecha_vencimiento = '';
-  form.detalles = [];
-  showFormModal.value = true;
-};
-
-const openShowModal = (venta) => {
-  selectedVenta.value = venta;
-  showViewModal.value = true;
-};
-
-const openDeleteModal = (venta) => {
-  selectedVenta.value = venta;
-  showDeleteModal.value = true;
-};
-
-// Funciones para cerrar modales
-const closeFormModal = () => {
-  showFormModal.value = false;
-  form.reset();
-  form.clearErrors();
-};
-
-const closeViewModal = () => {
-  showViewModal.value = false;
-  selectedVenta.value = null;
-};
-
-const closeDeleteModal = () => {
-  showDeleteModal.value = false;
-  selectedVenta.value = null;
-};
-
-// Manejo de productos en detalles
-const addProducto = () => {
-  form.detalles.push({
-    producto: '',
-    cantidad: 1,
-    precio_unitario: 0
-  });
-
-  // Hacer scroll al nuevo producto
-  setTimeout(() => {
-    const detalles = document.querySelectorAll('.bg-gray-50');
-    if (detalles.length > 0) {
-      detalles[detalles.length - 1].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-  }, 100);
-};
-
-const removeProducto = (index) => {
-  form.detalles.splice(index, 1);
-};
-
-const updateProductoInfo = (index) => {
-  const productoSeleccionado = form.detalles[index].producto;
-
-  if (!productoSeleccionado) {
-    return;
-  }
-
-  const producto = props.productos.find(
-    p => p.codigo === productoSeleccionado
-  );
-
-  if (producto) {
-    form.detalles[index].precio_unitario = parseFloat(producto.precio) || 0;
-    calculateSubtotal(index);
-  }
-};
-
-const calculateSubtotal = (index) => {
-  const cantidad = parseFloat(form.detalles[index].cantidad) || 0;
-  const precioUnitario = parseFloat(form.detalles[index].precio_unitario) || 0;
-  form.detalles[index].subtotal = cantidad * precioUnitario;
-};
-
-// Validar formulario antes de enviar
-const validateForm = () => {
-  if (form.detalles.length === 0) {
-    alert('Debe agregar al menos un producto');
-    return false;
-  }
-
-  for (let i = 0; i < form.detalles.length; i++) {
-    const detalle = form.detalles[i];
-
-    if (!detalle.producto) {
-      alert(`Debe seleccionar un producto en la fila ${i + 1}`);
-      return false;
-    }
-
-    if (!detalle.cantidad || detalle.cantidad <= 0) {
-      alert(`La cantidad debe ser mayor a 0 en la fila ${i + 1}`);
-      return false;
-    }
-
-    if (!detalle.precio_unitario || detalle.precio_unitario < 0) {
-      alert(`El precio unitario no es válido en la fila ${i + 1}`);
-      return false;
-    }
-
-    const producto = props.productos.find(p => p.codigo === detalle.producto);
-    if (producto && detalle.cantidad > producto.stock) {
-      alert(`Stock insuficiente para ${producto.nombre}. Stock disponible: ${producto.stock}`);
-      return false;
-    }
-  }
-
-  return true;
-};
-
-// Submit del formulario
-const submitForm = () => {
-  if (!validateForm()) {
-    return;
-  }
-
-  form.post(route('ventas.store'), {
-    onSuccess: () => closeFormModal()
-  });
-};
-
-// Eliminar venta (cancelar)
-const deleteVenta = () => {
-  deleteForm.delete(route('ventas.destroy', selectedVenta.value.codigo_venta), {
-    onSuccess: () => closeDeleteModal()
-  });
-};
-
-// Búsqueda con debounce
-const debouncedSearch = debounce(() => {
-  applyFilters();
-}, 500);
-
-// Aplicar filtros
-const applyFilters = () => {
-  router.get(route('ventas.index'), searchForm, {
-    preserveState: true,
-    preserveScroll: true
-  });
-};
-
-// Limpiar filtros
-const clearFilters = () => {
-  searchForm.search = '';
-  searchForm.estado = '';
-  searchForm.tipo_pago = '';
-  applyFilters();
-};
-
-// Formatear número
-const formatNumber = (value) => {
-  return new Intl.NumberFormat('es-BO', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(value || 0);
-};
-</script>
-
 <template>
   <AuthenticatedLayout title="Ventas">
     <template #header>
@@ -236,7 +6,7 @@ const formatNumber = (value) => {
           Ventas
         </h2>
         <PrimaryButton v-if="can.create" @click="openCreateModal">
-          <Plus :size="16" class="mr-2" />
+          <ShoppingCart :size="16" class="mr-2" />
           Nueva Venta
         </PrimaryButton>
       </div>
@@ -263,6 +33,7 @@ const formatNumber = (value) => {
             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="">Todos</option>
+            <option value="pendiente">Pendiente</option>
             <option value="completada">Completada</option>
             <option value="cancelada">Cancelada</option>
           </select>
@@ -282,7 +53,7 @@ const formatNumber = (value) => {
         </div>
         <div class="flex items-end">
           <SecondaryButton @click="clearFilters" class="w-full">
-            Limpiar Filtros
+            Limpiar
           </SecondaryButton>
         </div>
       </div>
@@ -294,93 +65,78 @@ const formatNumber = (value) => {
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                 N° Venta
               </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                 Cliente
               </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Vendedor
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                 Fecha
               </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                 Tipo Pago
               </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                 Total
               </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                 Estado
               </th>
-              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
                 Acciones
               </th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
             <tr v-for="venta in ventas.data" :key="venta.codigo_venta" class="hover:bg-gray-50">
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-mono font-semibold text-gray-900">
                 {{ venta.numero_venta }}
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              <td class="px-6 py-4 text-sm text-gray-900">
                 {{ venta.cliente }}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {{ venta.vendedor }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 {{ venta.fecha_venta }}
               </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span
-                  :class="[
-                    'px-2 py-1 rounded-full text-xs font-semibold',
-                    venta.tipo_pago === 'contado'
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-yellow-100 text-yellow-800'
-                  ]"
-                >
+              <td class="px-6 py-4 whitespace-nowrap text-sm">
+                <span :class="[
+                  'px-2 py-1 rounded-full text-xs font-semibold',
+                  venta.tipo_pago === 'contado'
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-orange-100 text-orange-800'
+                ]">
                   {{ venta.tipo_pago === 'contado' ? 'Contado' : 'Crédito' }}
                 </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                Bs. {{ formatNumber(venta.total) }}
+                Bs. {{ Number(venta.total).toFixed(2) }}
               </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span
-                  :class="[
-                    'px-2 py-1 rounded-full text-xs font-semibold',
-                    venta.estado === 'completada'
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-red-100 text-red-800'
-                  ]"
-                >
-                  {{ venta.estado === 'completada' ? 'Completada' : 'Cancelada' }}
+              <td class="px-6 py-4 whitespace-nowrap text-sm">
+                <span :class="getEstadoBadgeClass(venta.estado)">
+                  {{ getEstadoLabel(venta.estado) }}
                 </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                <button
-                  @click="openShowModal(venta)"
+                <Link
+                  :href="route('ventas.show', venta.codigo_venta)"
                   class="text-blue-600 hover:text-blue-900 inline-flex items-center"
-                  title="Ver"
+                  title="Ver Detalles"
                 >
                   <Eye :size="18" />
-                </button>
+                </Link>
                 <button
-                  v-if="can.delete && venta.estado === 'completada'"
-                  @click="openDeleteModal(venta)"
+                  v-if="can.delete && venta.estado !== 'cancelada'"
+                  @click="openCancelModal(venta)"
                   class="text-red-600 hover:text-red-900 inline-flex items-center"
-                  title="Cancelar venta"
+                  title="Cancelar"
                 >
-                  <Trash2 :size="18" />
+                  <XCircle :size="18" />
                 </button>
               </td>
             </tr>
             <tr v-if="ventas.data.length === 0">
-              <td colspan="8" class="px-6 py-8 text-center text-gray-500">
+              <td colspan="7" class="px-6 py-8 text-center text-gray-500">
                 No hay ventas registradas
               </td>
             </tr>
@@ -399,305 +155,218 @@ const formatNumber = (value) => {
       </div>
     </div>
 
-    <!-- Modal Crear Venta -->
-    <Modal :show="showFormModal" @close="closeFormModal" max-width="4xl">
+    <!-- Modal Nueva Venta -->
+    <Modal :show="showFormModal" @close="closeFormModal" max-width="6xl">
       <template #header>
         <h3 class="text-lg font-semibold text-gray-900">
           Nueva Venta
         </h3>
       </template>
 
-      <div class="space-y-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <InputLabel for="cliente_id" required>Cliente</InputLabel>
-            <select
-              id="cliente_id"
-              v-model="form.cliente_id"
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              :class="{ 'border-red-500': form.errors.cliente_id }"
-              required
-            >
-              <option value="">Seleccione un cliente</option>
-              <option v-for="cliente in clientes" :key="cliente.id" :value="cliente.id">
-                {{ cliente.nombre }}
-              </option>
-            </select>
-            <p v-if="form.errors.cliente_id" class="mt-1 text-sm text-red-600">
-              {{ form.errors.cliente_id }}
-            </p>
+      <form @submit.prevent="submitForm">
+        <div class="space-y-6">
+          <!-- Información General -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <InputLabel for="cliente_id" required>Cliente</InputLabel>
+              <select
+                id="cliente_id"
+                v-model="form.cliente_id"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                :class="{ 'border-red-500': form.errors.cliente_id }"
+                required
+              >
+                <option value="">Seleccionar cliente...</option>
+                <option v-for="cliente in clientes" :key="cliente.id" :value="cliente.id">
+                  {{ cliente.nombre }}
+                </option>
+              </select>
+              <p v-if="form.errors.cliente_id" class="mt-1 text-sm text-red-600">
+                {{ form.errors.cliente_id }}
+              </p>
+            </div>
+
+            <div>
+              <InputLabel for="fecha_venta" required>Fecha de Venta</InputLabel>
+              <TextInput
+                id="fecha_venta"
+                v-model="form.fecha_venta"
+                type="datetime-local"
+                :error="form.errors.fecha_venta"
+                required
+              />
+            </div>
+
+            <div>
+              <InputLabel for="tipo_pago" required>Tipo de Pago</InputLabel>
+              <select
+                id="tipo_pago"
+                v-model="form.tipo_pago"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                :class="{ 'border-red-500': form.errors.tipo_pago }"
+                required
+              >
+                <option value="">Seleccionar...</option>
+                <option value="contado">Contado</option>
+                <option value="credito">Crédito</option>
+              </select>
+              <p v-if="form.errors.tipo_pago" class="mt-1 text-sm text-red-600">
+                {{ form.errors.tipo_pago }}
+              </p>
+            </div>
           </div>
 
-          <div>
-            <InputLabel for="fecha_venta" required>Fecha de Venta</InputLabel>
-            <input
-              id="fecha_venta"
-              v-model="form.fecha_venta"
-              type="datetime-local"
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              required
-            />
-          </div>
-
-          <div>
-            <InputLabel for="tipo_pago" required>Tipo de Pago</InputLabel>
-            <select
-              id="tipo_pago"
-              v-model="form.tipo_pago"
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              required
-            >
-              <option value="contado">Contado</option>
-              <option value="credito">Crédito</option>
-            </select>
-          </div>
-
+          <!-- Fecha de vencimiento si es crédito -->
           <div v-if="form.tipo_pago === 'credito'">
             <InputLabel for="fecha_vencimiento" required>Fecha de Vencimiento</InputLabel>
-            <input
+            <TextInput
               id="fecha_vencimiento"
               v-model="form.fecha_vencimiento"
               type="date"
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              :class="{ 'border-red-500': form.errors.fecha_vencimiento }"
+              :error="form.errors.fecha_vencimiento"
+              required
             />
-            <p v-if="form.errors.fecha_vencimiento" class="mt-1 text-sm text-red-600">
-              {{ form.errors.fecha_vencimiento }}
+          </div>
+
+          <!-- Productos -->
+          <div>
+            <div class="flex justify-between items-center mb-3">
+              <InputLabel>Productos</InputLabel>
+              <SecondaryButton @click="agregarProducto" type="button">
+                <Plus :size="16" class="mr-2" />
+                Agregar Producto
+              </SecondaryButton>
+            </div>
+
+            <div class="border rounded-lg overflow-hidden">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Producto</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Cantidad</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Precio</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Subtotal</th>
+                    <th class="px-4 py-2"></th>
+                  </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                  <tr v-for="(detalle, index) in form.detalles" :key="index">
+                    <td class="px-4 py-2">
+                      <select
+                        v-model="detalle.producto"
+                        @change="onProductoChange(index)"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                        required
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option v-for="prod in productos" :key="prod.codigo" :value="prod.codigo">
+                          {{ prod.nombre }} (Stock: {{ prod.stock }})
+                        </option>
+                      </select>
+                    </td>
+                    <td class="px-4 py-2">
+                      <input
+                        v-model.number="detalle.cantidad"
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        @input="calcularSubtotal(index)"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                        required
+                      />
+                    </td>
+                    <td class="px-4 py-2">
+                      <input
+                        v-model.number="detalle.precio_unitario"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        @input="calcularSubtotal(index)"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                        required
+                      />
+                    </td>
+                    <td class="px-4 py-2 text-sm font-semibold">
+                      Bs. {{ calcularSubtotalDetalle(detalle).toFixed(2) }}
+                    </td>
+                    <td class="px-4 py-2">
+                      <button
+                        @click="eliminarProducto(index)"
+                        type="button"
+                        class="text-red-600 hover:text-red-800"
+                      >
+                        <Trash2 :size="18" />
+                      </button>
+                    </td>
+                  </tr>
+                  <tr v-if="form.detalles.length === 0">
+                    <td colspan="5" class="px-4 py-4 text-center text-gray-500 text-sm">
+                      No hay productos agregados
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p v-if="form.errors.detalles" class="mt-1 text-sm text-red-600">
+              {{ form.errors.detalles }}
             </p>
           </div>
 
-          <div>
-            <InputLabel for="descuento">Descuento (Bs.)</InputLabel>
-            <TextInput
-              id="descuento"
-              v-model="form.descuento"
-              type="number"
-              step="0.01"
-              min="0"
-              placeholder="0.00"
-            />
-          </div>
-        </div>
-
-        <!-- Productos -->
-        <div>
-          <div class="flex justify-between items-center mb-3">
-            <InputLabel required>Productos</InputLabel>
-            <SecondaryButton @click="addProducto" type="button">
-              <Plus :size="16" class="mr-2" />
-              Agregar Producto
-            </SecondaryButton>
-          </div>
-
-          <div class="space-y-3">
-            <div
-              v-for="(detalle, index) in form.detalles"
-              :key="index"
-              class="grid grid-cols-12 gap-3 items-end bg-gray-50 p-3 rounded-lg"
-            >
-              <div class="col-span-5">
-                <label class="block text-xs font-medium text-gray-700 mb-1">Producto</label>
-                <select
-                  v-model="form.detalles[index].producto"
-                  @change="updateProductoInfo(index)"
-                  class="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500"
-                  required
-                >
-                  <option value="">Seleccione...</option>
-                  <option v-for="prod in productos" :key="prod.codigo" :value="prod.codigo">
-                    {{ prod.nombre }} (Stock: {{ prod.stock }} {{ prod.unidad }})
-                  </option>
-                </select>
-              </div>
-
-              <div class="col-span-2">
-                <label class="block text-xs font-medium text-gray-700 mb-1">Cantidad</label>
-                <input
-                  v-model.number="form.detalles[index].cantidad"
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  @input="calculateSubtotal(index)"
-                  class="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-
-              <div class="col-span-2">
-                <label class="block text-xs font-medium text-gray-700 mb-1">Precio Unit.</label>
-                <input
-                  v-model.number="form.detalles[index].precio_unitario"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  @input="calculateSubtotal(index)"
-                  class="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-
-              <div class="col-span-2">
-                <label class="block text-xs font-medium text-gray-700 mb-1">Subtotal</label>
-                <input
-                  :value="formatNumber(form.detalles[index].cantidad * form.detalles[index].precio_unitario)"
-                  disabled
-                  class="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded text-sm"
-                />
-              </div>
-
-              <div class="col-span-1 flex justify-end">
-                <button
-                  @click="removeProducto(index)"
-                  type="button"
-                  class="p-2 text-red-600 hover:text-red-900 hover:bg-red-50 rounded transition-colors"
-                  title="Eliminar producto"
-                >
-                  <X :size="18" />
-                </button>
-              </div>
-            </div>
-
-            <!-- Mensaje cuando no hay productos -->
-            <div v-if="form.detalles.length === 0" class="text-center py-8 text-gray-500 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-              <ShoppingCart :size="48" class="mx-auto mb-2 text-gray-400" />
-              <p>No hay productos agregados</p>
-              <p class="text-sm">Haz clic en "Agregar Producto" para comenzar</p>
-            </div>
-          </div>
-
-          <p v-if="form.errors.detalles" class="mt-2 text-sm text-red-600">
-            {{ form.errors.detalles }}
-          </p>
-        </div>
-
-        <!-- Totales -->
-        <div class="bg-gray-50 rounded-lg p-4">
-          <div class="space-y-2">
+          <!-- Resumen -->
+          <div class="bg-gray-50 p-4 rounded-lg space-y-2">
             <div class="flex justify-between text-sm">
               <span class="text-gray-600">Subtotal:</span>
-              <span class="font-semibold">Bs. {{ formatNumber(calcularSubtotal) }}</span>
+              <span class="font-semibold">Bs. {{ subtotal.toFixed(2) }}</span>
             </div>
-            <div class="flex justify-between text-sm">
-              <span class="text-gray-600">Descuento:</span>
-              <span class="font-semibold">Bs. {{ formatNumber(form.descuento || 0) }}</span>
+
+            <div class="flex justify-between items-center">
+              <InputLabel for="descuento">Descuento:</InputLabel>
+              <div class="flex items-center space-x-2">
+                <span class="text-sm text-gray-600">Bs.</span>
+                <input
+                  id="descuento"
+                  v-model.number="form.descuento"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  class="w-32 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                />
+              </div>
             </div>
+
             <div class="flex justify-between text-lg font-bold border-t pt-2">
               <span>Total:</span>
-              <span class="text-blue-600">Bs. {{ formatNumber(calcularTotal) }}</span>
+              <span class="text-blue-600">Bs. {{ total.toFixed(2) }}</span>
             </div>
           </div>
+
+          <!-- Notas -->
+          <div>
+            <InputLabel for="notas">Notas</InputLabel>
+            <textarea
+              id="notas"
+              v-model="form.notas"
+              rows="2"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Notas adicionales..."
+            ></textarea>
+          </div>
         </div>
 
-        <!-- Notas -->
-        <div>
-          <InputLabel for="notas">Notas</InputLabel>
-          <textarea
-            id="notas"
-            v-model="form.notas"
-            rows="3"
-            maxlength="1000"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Observaciones adicionales..."
-          ></textarea>
+        <div class="flex justify-end space-x-3 mt-6">
+          <SecondaryButton @click="closeFormModal" type="button">
+            Cancelar
+          </SecondaryButton>
+          <PrimaryButton type="submit" :disabled="form.processing || form.detalles.length === 0">
+            <Loader v-if="form.processing" :size="16" class="mr-2 animate-spin" />
+            Registrar Venta
+          </PrimaryButton>
         </div>
-      </div>
-
-      <div class="flex justify-end space-x-3 mt-6">
-        <SecondaryButton @click="closeFormModal" type="button">
-          Cancelar
-        </SecondaryButton>
-        <PrimaryButton @click="submitForm" type="button" :disabled="form.processing">
-          <Loader v-if="form.processing" :size="16" class="mr-2 animate-spin" />
-          Guardar Venta
-        </PrimaryButton>
-      </div>
+      </form>
     </Modal>
 
-    <!-- Modal Ver -->
-    <Modal :show="showViewModal" @close="closeViewModal" max-width="3xl">
-      <template #header>
-        <h3 class="text-lg font-semibold text-gray-900">
-          Detalles de la Venta
-        </h3>
-      </template>
-
-      <div v-if="selectedVenta" class="space-y-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="text-sm font-medium text-gray-500">N° Venta</label>
-            <p class="mt-1 text-base text-gray-900">{{ selectedVenta.numero_venta }}</p>
-          </div>
-
-          <div>
-            <label class="text-sm font-medium text-gray-500">Cliente</label>
-            <p class="mt-1 text-base text-gray-900">{{ selectedVenta.cliente }}</p>
-          </div>
-
-          <div>
-            <label class="text-sm font-medium text-gray-500">Vendedor</label>
-            <p class="mt-1 text-base text-gray-900">{{ selectedVenta.vendedor }}</p>
-          </div>
-
-          <div>
-            <label class="text-sm font-medium text-gray-500">Fecha de Venta</label>
-            <p class="mt-1 text-base text-gray-900">{{ selectedVenta.fecha_venta }}</p>
-          </div>
-
-          <div>
-            <label class="text-sm font-medium text-gray-500">Tipo de Pago</label>
-            <p class="mt-1">
-              <span
-                :class="[
-                  'px-2 py-1 rounded-full text-xs font-semibold',
-                  selectedVenta.tipo_pago === 'contado'
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-yellow-100 text-yellow-800'
-                ]"
-              >
-                {{ selectedVenta.tipo_pago === 'contado' ? 'Contado' : 'Crédito' }}
-              </span>
-            </p>
-          </div>
-
-          <div>
-            <label class="text-sm font-medium text-gray-500">Estado</label>
-            <p class="mt-1">
-              <span
-                :class="[
-                  'px-2 py-1 rounded-full text-xs font-semibold',
-                  selectedVenta.estado === 'completada'
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-red-100 text-red-800'
-                ]"
-              >
-                {{ selectedVenta.estado === 'completada' ? 'Completada' : 'Cancelada' }}
-              </span>
-            </p>
-          </div>
-        </div>
-
-        <div>
-          <label class="text-sm font-medium text-gray-500">Total</label>
-          <p class="mt-1 text-xl font-bold text-blue-600">
-            Bs. {{ formatNumber(selectedVenta.total) }}
-          </p>
-        </div>
-
-        <div v-if="selectedVenta.notas">
-          <label class="text-sm font-medium text-gray-500">Notas</label>
-          <p class="mt-1 text-base text-gray-900">{{ selectedVenta.notas }}</p>
-        </div>
-      </div>
-
-      <div class="flex justify-end mt-6">
-        <SecondaryButton @click="closeViewModal">
-          Cerrar
-        </SecondaryButton>
-      </div>
-    </Modal>
-
-    <!-- Modal Eliminar (Cancelar) -->
-    <Modal :show="showDeleteModal" @close="closeDeleteModal" max-width="md">
+    <!-- Modal Cancelar Venta -->
+    <Modal :show="showCancelModal" @close="closeCancelModal" max-width="md">
       <template #header>
         <h3 class="text-lg font-semibold text-gray-900">
           Cancelar Venta
@@ -706,23 +375,203 @@ const formatNumber = (value) => {
 
       <div v-if="selectedVenta">
         <p class="text-gray-700">
-          ¿Estás seguro de que deseas cancelar la venta
-          <span class="font-semibold">{{ selectedVenta.numero_venta }}</span>?
+          ¿Estás seguro de que deseas cancelar esta venta?
         </p>
-        <p class="mt-2 text-sm text-red-600">
-          Esta acción revertirá el stock de los productos vendidos.
+        <div class="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
+          <p class="text-sm text-yellow-800">
+            <span class="font-semibold">Número:</span> {{ selectedVenta.numero_venta }}<br>
+            <span class="font-semibold">Cliente:</span> {{ selectedVenta.cliente }}<br>
+            <span class="font-semibold">Total:</span> Bs. {{ Number(selectedVenta.total).toFixed(2) }}
+          </p>
+        </div>
+        <p class="mt-3 text-sm text-red-600 font-semibold">
+          ⚠️ Esta acción revertirá el stock de los productos.
         </p>
       </div>
 
       <div class="flex justify-end space-x-3 mt-6">
-        <SecondaryButton @click="closeDeleteModal" type="button">
-          No, volver
+        <SecondaryButton @click="closeCancelModal" type="button">
+          No, mantener
         </SecondaryButton>
-        <DangerButton @click="deleteVenta" :disabled="deleteForm.processing">
-          <Loader v-if="deleteForm.processing" :size="16" class="mr-2 animate-spin" />
+        <DangerButton @click="cancelVenta" :disabled="cancelForm.processing">
+          <Loader v-if="cancelForm.processing" :size="16" class="mr-2 animate-spin" />
           Sí, cancelar venta
         </DangerButton>
       </div>
     </Modal>
   </AuthenticatedLayout>
 </template>
+
+<script setup>
+import { ref, reactive, computed } from 'vue';
+import { useForm, router, Link } from '@inertiajs/vue3';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import Modal from '@/Components/Modal.vue';
+import Pagination from '@/Components/Pagination.vue';
+import PrimaryButton from '@/Components/PrimaryButton.vue';
+import SecondaryButton from '@/Components/SecondaryButton.vue';
+import DangerButton from '@/Components/DangerButton.vue';
+import InputLabel from '@/Components/InputLabel.vue';
+import TextInput from '@/Components/TextInput.vue';
+import { ShoppingCart, Plus, Eye, Trash2, Loader, XCircle } from 'lucide-vue-next';
+
+const props = defineProps({
+  ventas: Object,
+  clientes: Array,
+  productos: Array,
+  filters: Object,
+  can: Object
+});
+
+// Estados
+const showFormModal = ref(false);
+const showCancelModal = ref(false);
+const selectedVenta = ref(null);
+
+// Formulario de búsqueda
+const searchForm = reactive({
+  search: props.filters?.search || '',
+  estado: props.filters?.estado || '',
+  tipo_pago: props.filters?.tipo_pago || ''
+});
+
+// Formulario principal
+const form = useForm({
+  cliente_id: '',
+  fecha_venta: new Date().toISOString().slice(0, 16),
+  tipo_pago: '',
+  fecha_vencimiento: '',
+  descuento: 0,
+  notas: '',
+  detalles: []
+});
+
+const cancelForm = useForm({});
+
+// Computed
+const subtotal = computed(() => {
+  return form.detalles.reduce((sum, detalle) => {
+    return sum + (detalle.cantidad * detalle.precio_unitario);
+  }, 0);
+});
+
+const total = computed(() => {
+  return Math.max(0, subtotal.value - (form.descuento || 0));
+});
+
+// Funciones
+const openCreateModal = () => {
+  form.reset();
+  form.fecha_venta = new Date().toISOString().slice(0, 16);
+  form.detalles = [];
+  form.clearErrors();
+  showFormModal.value = true;
+};
+
+const closeFormModal = () => {
+  showFormModal.value = false;
+  form.reset();
+};
+
+const agregarProducto = () => {
+  form.detalles.push({
+    producto: '',
+    cantidad: 1,
+    precio_unitario: 0
+  });
+};
+
+const eliminarProducto = (index) => {
+  form.detalles.splice(index, 1);
+};
+
+const onProductoChange = (index) => {
+  const productoSeleccionado = props.productos.find(
+    p => p.codigo === form.detalles[index].producto
+  );
+
+  if (productoSeleccionado) {
+    form.detalles[index].precio_unitario = productoSeleccionado.precio;
+  }
+};
+
+const calcularSubtotalDetalle = (detalle) => {
+  return (detalle.cantidad || 0) * (detalle.precio_unitario || 0);
+};
+
+const calcularSubtotal = (index) => {
+  // Trigger reactivity
+  form.detalles[index] = { ...form.detalles[index] };
+};
+
+const submitForm = () => {
+  form.post(route('ventas.store'), {
+    onSuccess: () => closeFormModal()
+  });
+};
+
+const openCancelModal = (venta) => {
+  selectedVenta.value = venta;
+  showCancelModal.value = true;
+};
+
+const closeCancelModal = () => {
+  showCancelModal.value = false;
+  selectedVenta.value = null;
+};
+
+const cancelVenta = () => {
+  cancelForm.delete(route('ventas.destroy', selectedVenta.value.codigo_venta), {
+    onSuccess: () => closeCancelModal()
+  });
+};
+
+const getEstadoLabel = (estado) => {
+  const labels = {
+    'pendiente': 'Pendiente',
+    'completada': 'Completada',
+    'cancelada': 'Cancelada'
+  };
+  return labels[estado] || estado;
+};
+
+const getEstadoBadgeClass = (estado) => {
+  const classes = {
+    'pendiente': 'px-2 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800',
+    'completada': 'px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800',
+    'cancelada': 'px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800'
+  };
+  return classes[estado] || '';
+};
+
+// Debounce
+const debounce = (func, wait) => {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+};
+
+const debouncedSearch = debounce(() => {
+  applyFilters();
+}, 500);
+
+const applyFilters = () => {
+  router.get(route('ventas.index'), searchForm, {
+    preserveState: true,
+    preserveScroll: true
+  });
+};
+
+const clearFilters = () => {
+  searchForm.search = '';
+  searchForm.estado = '';
+  searchForm.tipo_pago = '';
+  applyFilters();
+};
+</script>

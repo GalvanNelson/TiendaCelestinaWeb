@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('cuotas', function (Blueprint $table) {
             $table->id('codigo_cuota');
-            $table->foreignId('cuenta_por_cobrar')->constrained('cuenta_por_cobrars', 'codigo_cuenta')->onDelete('cascade');
+            $table->foreignId('cuenta_por_cobrar_id')->constrained('cuenta_por_cobrars', 'codigo_cuenta')->onDelete('cascade');
             $table->integer('numero_cuota');
             $table->decimal('monto', 10, 2);
             $table->date('fecha_vencimiento');
@@ -21,7 +21,7 @@ return new class extends Migration
             $table->enum('estado', ['pendiente', 'pagada', 'vencida'])->default('pendiente');
             $table->timestamps();
 
-            $table->index('cuenta_por_cobrar');
+            $table->index('cuenta_por_cobrar_id');
             $table->index('estado');
         });
     }
