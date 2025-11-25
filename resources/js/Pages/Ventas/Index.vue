@@ -49,12 +49,15 @@ const deleteForm = useForm({});
 // Computed
 const calcularSubtotal = computed(() => {
   return form.detalles.reduce((sum, det) => {
-    return sum + (det.cantidad * det.precio_unitario);
+    const cantidad = parseFloat(det.cantidad) || 0;
+    const precio = parseFloat(det.precio_unitario) || 0;
+    return sum + (cantidad * precio);
   }, 0);
 });
 
 const calcularTotal = computed(() => {
-  return calcularSubtotal.value - (form.descuento || 0);
+  const descuento = parseFloat(form.descuento) || 0;
+  return calcularSubtotal.value - descuento;
 });
 
 // Funciones para abrir modales
@@ -105,6 +108,14 @@ const addProducto = () => {
     cantidad: 1,
     precio_unitario: 0
   });
+
+  // Hacer scroll al nuevo producto
+  setTimeout(() => {
+    const detalles = document.querySelectorAll('.bg-gray-50');
+    if (detalles.length > 0) {
+      detalles[detalles.length - 1].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, 100);
 };
 
 const removeProducto = (index) => {
@@ -112,21 +123,69 @@ const removeProducto = (index) => {
 };
 
 const updateProductoInfo = (index) => {
+  const productoSeleccionado = form.detalles[index].producto;
+
+  if (!productoSeleccionado) {
+    return;
+  }
+
   const producto = props.productos.find(
-    p => p.codigo === form.detalles[index].producto
+    p => p.codigo === productoSeleccionado
   );
+
   if (producto) {
-    form.detalles[index].precio_unitario = producto.precio;
+    form.detalles[index].precio_unitario = parseFloat(producto.precio) || 0;
+    calculateSubtotal(index);
   }
 };
 
 const calculateSubtotal = (index) => {
-  const detalle = form.detalles[index];
-  detalle.subtotal = detalle.cantidad * detalle.precio_unitario;
+  const cantidad = parseFloat(form.detalles[index].cantidad) || 0;
+  const precioUnitario = parseFloat(form.detalles[index].precio_unitario) || 0;
+  form.detalles[index].subtotal = cantidad * precioUnitario;
+};
+
+// Validar formulario antes de enviar
+const validateForm = () => {
+  if (form.detalles.length === 0) {
+    alert('Debe agregar al menos un producto');
+    return false;
+  }
+
+  for (let i = 0; i < form.detalles.length; i++) {
+    const detalle = form.detalles[i];
+
+    if (!detalle.producto) {
+      alert(`Debe seleccionar un producto en la fila ${i + 1}`);
+      return false;
+    }
+
+    if (!detalle.cantidad || detalle.cantidad <= 0) {
+      alert(`La cantidad debe ser mayor a 0 en la fila ${i + 1}`);
+      return false;
+    }
+
+    if (!detalle.precio_unitario || detalle.precio_unitario < 0) {
+      alert(`El precio unitario no es válido en la fila ${i + 1}`);
+      return false;
+    }
+
+    const producto = props.productos.find(p => p.codigo === detalle.producto);
+    if (producto && detalle.cantidad > producto.stock) {
+      alert(`Stock insuficiente para ${producto.nombre}. Stock disponible: ${producto.stock}`);
+      return false;
+    }
+  }
+
+  return true;
 };
 
 // Submit del formulario
 const submitForm = () => {
+  if (!validateForm()) {
+    return;
+  }
+
   form.post(route('ventas.store'), {
     onSuccess: () => closeFormModal()
   });
@@ -166,15 +225,6 @@ const formatNumber = (value) => {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   }).format(value || 0);
-};
-
-// Formatear fecha
-const formatDate = (date) => {
-  return new Date(date).toLocaleDateString('es-ES', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
 };
 </script>
 
@@ -357,200 +407,210 @@ const formatDate = (date) => {
         </h3>
       </template>
 
-      <form @submit.prevent="submitForm">
-        <div class="space-y-4">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <InputLabel for="cliente_id" required>Cliente</InputLabel>
-              <select
-                id="cliente_id"
-                v-model="form.cliente_id"
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                :class="{ 'border-red-500': form.errors.cliente_id }"
-                required
-              >
-                <option value="">Seleccione un cliente</option>
-                <option v-for="cliente in clientes" :key="cliente.id" :value="cliente.id">
-                  {{ cliente.nombre }}
-                </option>
-              </select>
-              <p v-if="form.errors.cliente_id" class="mt-1 text-sm text-red-600">
-                {{ form.errors.cliente_id }}
-              </p>
-            </div>
-
-            <div>
-              <InputLabel for="fecha_venta" required>Fecha de Venta</InputLabel>
-              <input
-                id="fecha_venta"
-                v-model="form.fecha_venta"
-                type="datetime-local"
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              />
-            </div>
-
-            <div>
-              <InputLabel for="tipo_pago" required>Tipo de Pago</InputLabel>
-              <select
-                id="tipo_pago"
-                v-model="form.tipo_pago"
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              >
-                <option value="contado">Contado</option>
-                <option value="credito">Crédito</option>
-              </select>
-            </div>
-
-            <div v-if="form.tipo_pago === 'credito'">
-              <InputLabel for="fecha_vencimiento" required>Fecha de Vencimiento</InputLabel>
-              <input
-                id="fecha_vencimiento"
-                v-model="form.fecha_vencimiento"
-                type="date"
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                :class="{ 'border-red-500': form.errors.fecha_vencimiento }"
-              />
-              <p v-if="form.errors.fecha_vencimiento" class="mt-1 text-sm text-red-600">
-                {{ form.errors.fecha_vencimiento }}
-              </p>
-            </div>
-
-            <div>
-              <InputLabel for="descuento">Descuento (Bs.)</InputLabel>
-              <TextInput
-                id="descuento"
-                v-model="form.descuento"
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="0.00"
-              />
-            </div>
-          </div>
-
-          <!-- Productos -->
+      <div class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <div class="flex justify-between items-center mb-3">
-              <InputLabel required>Productos</InputLabel>
-              <SecondaryButton @click="addProducto" type="button">
-                <Plus :size="16" class="mr-2" />
-                Agregar Producto
-              </SecondaryButton>
-            </div>
-
-            <div class="space-y-3">
-              <div
-                v-for="(detalle, index) in form.detalles"
-                :key="index"
-                class="grid grid-cols-12 gap-3 items-end bg-gray-50 p-3 rounded-lg"
-              >
-                <div class="col-span-5">
-                  <label class="block text-xs font-medium text-gray-700 mb-1">Producto</label>
-                  <select
-                    v-model="detalle.producto"
-                    @change="updateProductoInfo(index)"
-                    class="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Seleccione...</option>
-                    <option v-for="prod in productos" :key="prod.codigo" :value="prod.codigo">
-                      {{ prod.nombre }} (Stock: {{ prod.stock }} {{ prod.unidad }})
-                    </option>
-                  </select>
-                </div>
-
-                <div class="col-span-2">
-                  <label class="block text-xs font-medium text-gray-700 mb-1">Cantidad</label>
-                  <input
-                    v-model.number="detalle.cantidad"
-                    type="number"
-                    step="0.01"
-                    min="0.01"
-                    @input="calculateSubtotal(index)"
-                    class="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div class="col-span-2">
-                  <label class="block text-xs font-medium text-gray-700 mb-1">Precio Unit.</label>
-                  <input
-                    v-model.number="detalle.precio_unitario"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    @input="calculateSubtotal(index)"
-                    class="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div class="col-span-2">
-                  <label class="block text-xs font-medium text-gray-700 mb-1">Subtotal</label>
-                  <input
-                    :value="formatNumber(detalle.cantidad * detalle.precio_unitario)"
-                    disabled
-                    class="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded text-sm"
-                  />
-                </div>
-
-                <div class="col-span-1 flex justify-end">
-                  <button
-                    @click="removeProducto(index)"
-                    type="button"
-                    class="p-2 text-red-600 hover:text-red-900"
-                  >
-                    <X :size="18" />
-                  </button>
-                </div>
-              </div>
-            </div>
-            <p v-if="form.errors.detalles" class="mt-1 text-sm text-red-600">
-              {{ form.errors.detalles }}
+            <InputLabel for="cliente_id" required>Cliente</InputLabel>
+            <select
+              id="cliente_id"
+              v-model="form.cliente_id"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              :class="{ 'border-red-500': form.errors.cliente_id }"
+              required
+            >
+              <option value="">Seleccione un cliente</option>
+              <option v-for="cliente in clientes" :key="cliente.id" :value="cliente.id">
+                {{ cliente.nombre }}
+              </option>
+            </select>
+            <p v-if="form.errors.cliente_id" class="mt-1 text-sm text-red-600">
+              {{ form.errors.cliente_id }}
             </p>
           </div>
 
-          <!-- Totales -->
-          <div class="bg-gray-50 rounded-lg p-4">
-            <div class="space-y-2">
-              <div class="flex justify-between text-sm">
-                <span class="text-gray-600">Subtotal:</span>
-                <span class="font-semibold">Bs. {{ formatNumber(calcularSubtotal) }}</span>
+          <div>
+            <InputLabel for="fecha_venta" required>Fecha de Venta</InputLabel>
+            <input
+              id="fecha_venta"
+              v-model="form.fecha_venta"
+              type="datetime-local"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+            />
+          </div>
+
+          <div>
+            <InputLabel for="tipo_pago" required>Tipo de Pago</InputLabel>
+            <select
+              id="tipo_pago"
+              v-model="form.tipo_pago"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+            >
+              <option value="contado">Contado</option>
+              <option value="credito">Crédito</option>
+            </select>
+          </div>
+
+          <div v-if="form.tipo_pago === 'credito'">
+            <InputLabel for="fecha_vencimiento" required>Fecha de Vencimiento</InputLabel>
+            <input
+              id="fecha_vencimiento"
+              v-model="form.fecha_vencimiento"
+              type="date"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              :class="{ 'border-red-500': form.errors.fecha_vencimiento }"
+            />
+            <p v-if="form.errors.fecha_vencimiento" class="mt-1 text-sm text-red-600">
+              {{ form.errors.fecha_vencimiento }}
+            </p>
+          </div>
+
+          <div>
+            <InputLabel for="descuento">Descuento (Bs.)</InputLabel>
+            <TextInput
+              id="descuento"
+              v-model="form.descuento"
+              type="number"
+              step="0.01"
+              min="0"
+              placeholder="0.00"
+            />
+          </div>
+        </div>
+
+        <!-- Productos -->
+        <div>
+          <div class="flex justify-between items-center mb-3">
+            <InputLabel required>Productos</InputLabel>
+            <SecondaryButton @click="addProducto" type="button">
+              <Plus :size="16" class="mr-2" />
+              Agregar Producto
+            </SecondaryButton>
+          </div>
+
+          <div class="space-y-3">
+            <div
+              v-for="(detalle, index) in form.detalles"
+              :key="index"
+              class="grid grid-cols-12 gap-3 items-end bg-gray-50 p-3 rounded-lg"
+            >
+              <div class="col-span-5">
+                <label class="block text-xs font-medium text-gray-700 mb-1">Producto</label>
+                <select
+                  v-model="form.detalles[index].producto"
+                  @change="updateProductoInfo(index)"
+                  class="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500"
+                  required
+                >
+                  <option value="">Seleccione...</option>
+                  <option v-for="prod in productos" :key="prod.codigo" :value="prod.codigo">
+                    {{ prod.nombre }} (Stock: {{ prod.stock }} {{ prod.unidad }})
+                  </option>
+                </select>
               </div>
-              <div class="flex justify-between text-sm">
-                <span class="text-gray-600">Descuento:</span>
-                <span class="font-semibold">Bs. {{ formatNumber(form.descuento || 0) }}</span>
+
+              <div class="col-span-2">
+                <label class="block text-xs font-medium text-gray-700 mb-1">Cantidad</label>
+                <input
+                  v-model.number="form.detalles[index].cantidad"
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  @input="calculateSubtotal(index)"
+                  class="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500"
+                  required
+                />
               </div>
-              <div class="flex justify-between text-lg font-bold border-t pt-2">
-                <span>Total:</span>
-                <span class="text-blue-600">Bs. {{ formatNumber(calcularTotal) }}</span>
+
+              <div class="col-span-2">
+                <label class="block text-xs font-medium text-gray-700 mb-1">Precio Unit.</label>
+                <input
+                  v-model.number="form.detalles[index].precio_unitario"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  @input="calculateSubtotal(index)"
+                  class="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500"
+                  required
+                />
               </div>
+
+              <div class="col-span-2">
+                <label class="block text-xs font-medium text-gray-700 mb-1">Subtotal</label>
+                <input
+                  :value="formatNumber(form.detalles[index].cantidad * form.detalles[index].precio_unitario)"
+                  disabled
+                  class="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded text-sm"
+                />
+              </div>
+
+              <div class="col-span-1 flex justify-end">
+                <button
+                  @click="removeProducto(index)"
+                  type="button"
+                  class="p-2 text-red-600 hover:text-red-900 hover:bg-red-50 rounded transition-colors"
+                  title="Eliminar producto"
+                >
+                  <X :size="18" />
+                </button>
+              </div>
+            </div>
+
+            <!-- Mensaje cuando no hay productos -->
+            <div v-if="form.detalles.length === 0" class="text-center py-8 text-gray-500 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+              <ShoppingCart :size="48" class="mx-auto mb-2 text-gray-400" />
+              <p>No hay productos agregados</p>
+              <p class="text-sm">Haz clic en "Agregar Producto" para comenzar</p>
             </div>
           </div>
 
-          <!-- Notas -->
-          <div>
-            <InputLabel for="notas">Notas</InputLabel>
-            <textarea
-              id="notas"
-              v-model="form.notas"
-              rows="3"
-              maxlength="1000"
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Observaciones adicionales..."
-            ></textarea>
+          <p v-if="form.errors.detalles" class="mt-2 text-sm text-red-600">
+            {{ form.errors.detalles }}
+          </p>
+        </div>
+
+        <!-- Totales -->
+        <div class="bg-gray-50 rounded-lg p-4">
+          <div class="space-y-2">
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-600">Subtotal:</span>
+              <span class="font-semibold">Bs. {{ formatNumber(calcularSubtotal) }}</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-600">Descuento:</span>
+              <span class="font-semibold">Bs. {{ formatNumber(form.descuento || 0) }}</span>
+            </div>
+            <div class="flex justify-between text-lg font-bold border-t pt-2">
+              <span>Total:</span>
+              <span class="text-blue-600">Bs. {{ formatNumber(calcularTotal) }}</span>
+            </div>
           </div>
         </div>
 
-        <div class="flex justify-end space-x-3 mt-6">
-          <SecondaryButton @click="closeFormModal" type="button">
-            Cancelar
-          </SecondaryButton>
-          <PrimaryButton type="submit" :disabled="form.processing">
-            <Loader v-if="form.processing" :size="16" class="mr-2 animate-spin" />
-            Guardar Venta
-          </PrimaryButton>
+        <!-- Notas -->
+        <div>
+          <InputLabel for="notas">Notas</InputLabel>
+          <textarea
+            id="notas"
+            v-model="form.notas"
+            rows="3"
+            maxlength="1000"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Observaciones adicionales..."
+          ></textarea>
         </div>
-      </form>
+      </div>
+
+      <div class="flex justify-end space-x-3 mt-6">
+        <SecondaryButton @click="closeFormModal" type="button">
+          Cancelar
+        </SecondaryButton>
+        <PrimaryButton @click="submitForm" type="button" :disabled="form.processing">
+          <Loader v-if="form.processing" :size="16" class="mr-2 animate-spin" />
+          Guardar Venta
+        </PrimaryButton>
+      </div>
     </Modal>
 
     <!-- Modal Ver -->

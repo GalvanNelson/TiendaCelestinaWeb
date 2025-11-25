@@ -44,7 +44,7 @@ class ProductoController extends Controller
                 return [
                     'codigo_producto' => $producto->codigo_producto,
                     'nombre' => $producto->nombre,
-                    'descripcion' => $producto->descripcion ?? '',
+                    //'descripcion' => $producto->descripcion ?? '',
                     'imagen' => $producto->imagen ? Storage::url($producto->imagen) : null,
                     'precio_unitario' => $producto->precio_unitario,
                     'stock' => $producto->stock,
@@ -68,7 +68,7 @@ class ProductoController extends Controller
         // Obtener todas las unidades de medida
         $unidades = \App\Models\UnidadMedida::orderBy('nombre')->get()->map(function ($unidad) {
             return [
-                'codigo' => $unidad->codigo_unidad,
+                'codigo' => $unidad->codigo_medida,
                 'nombre' => $unidad->nombre,
             ];
         });
@@ -97,7 +97,7 @@ class ProductoController extends Controller
             'precio_unitario' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
             'categoria_codigo' => 'required|exists:categorias,codigo_categoria',
-            'unidad_codigo' => 'required|exists:unidad_medidas,codigo_unidad',
+            'unidad_codigo' => 'required|exists:unidad_medidas,codigo_medida',
             'imagen' => 'nullable|image|max:2048', // max 2MB
         ], [
             'nombre.required' => 'El nombre es obligatorio.',
@@ -129,13 +129,15 @@ class ProductoController extends Controller
      */
     public function update(Request $request, Producto $producto)
     {
+        //$producto = Producto::where('codigo_producto', $producto->codigo_producto)->firstOrFail();
+
         $validated = $request->validate([
             'nombre' => 'required|string|max:255',
             'descripcion' => 'nullable|string|max:1000',
             'precio_unitario' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
             'categoria_codigo' => 'required|exists:categorias,codigo_categoria',
-            'unidad_codigo' => 'required|exists:unidad_medidas,codigo_unidad',
+            'unidad_codigo' => 'required|exists:unidad_medidas,codigo_medida',
             'imagen' => 'nullable|image|max:2048',
         ], [
             'nombre.required' => 'El nombre es obligatorio.',

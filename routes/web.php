@@ -74,6 +74,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/', [ProductoController::class, 'index'])->name('productos.index');
         Route::post('/', [ProductoController::class, 'store'])->name('productos.store');
         Route::put('/{producto}', [ProductoController::class, 'update'])->name('productos.update');
+        Route::post('/{producto}', [ProductoController::class, 'update'])->name('productos.update');
         Route::delete('/{producto}', [ProductoController::class, 'destroy'])->name('productos.destroy');
 
         // Categorías
