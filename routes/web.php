@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Models\User;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\VentaController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -98,7 +99,31 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('salidas-stock', [SalidaStockController::class, 'store'])->name('productos.salidas-stock.store');
         Route::put('salidas-stock/{codigo_salida}', [SalidaStockController::class, 'update'])->name('productos.salidas-stock.update');
         Route::delete('salidas-stock/{codigo_salida}', [SalidaStockController::class, 'destroy'])->name('productos.salidas-stock.destroy');
+    });
 
+    // ========================================
+    // VENTAS
+    // ========================================
+    Route::prefix('ventas')->group(function () {
+        // CRUD de Ventas
+        Route::get('/', [VentaController::class, 'index'])
+            ->name('ventas.index')
+            ->middleware('permission:' . PermissionEnum::VIEW_SALES->value);
 
+        Route::get('/{venta}', [VentaController::class, 'show'])
+            ->name('ventas.show')
+            ->middleware('permission:' . PermissionEnum::VIEW_SALES->value);
+
+        Route::post('/', [VentaController::class, 'store'])
+            ->name('ventas.store')
+            ->middleware('permission:' . PermissionEnum::CREATE_SALES->value);
+
+        Route::put('/{venta}', [VentaController::class, 'update'])
+            ->name('ventas.update')
+            ->middleware('permission:' . PermissionEnum::EDIT_SALES->value);
+
+        Route::delete('/{venta}', [VentaController::class, 'destroy'])
+            ->name('ventas.destroy')
+            ->middleware('permission:' . PermissionEnum::DELETE_SALES->value);
     });
 });

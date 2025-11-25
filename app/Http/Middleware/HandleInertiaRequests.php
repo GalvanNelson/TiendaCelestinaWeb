@@ -117,6 +117,13 @@ class HandleInertiaRequests extends Middleware
                 ],
             ],
             [
+                'id' => 'ventas',
+                'label' => 'Ventas',
+                'icon' => 'CreditCard',
+                'route' => 'ventas.index',
+                'permission' => PermissionEnum::VIEW_SALES->value,
+            ],
+            [
                 'id' => 'settings',
                 'label' => 'Configuración',
                 'icon' => 'Settings',
