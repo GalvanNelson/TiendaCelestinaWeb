@@ -182,7 +182,7 @@
           <div v-if="selectedProducto" class="p-3 bg-blue-50 rounded-lg">
             <p class="text-sm text-blue-800">
               <span class="font-semibold">Stock actual:</span>
-              {{ selectedProducto.stock_actual }} {{ selectedProducto.unidad_medida }}
+              {{ selectedProducto.stock_actual }}
             </p>
           </div>
 

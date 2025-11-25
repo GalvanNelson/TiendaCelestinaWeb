@@ -49,9 +49,9 @@
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
-            <tr v-for="unidad in unidades.data" :key="unidad.codigo_unidad" class="hover:bg-gray-50">
+            <tr v-for="(unidad, index) in unidades.data" :key="unidad.codigo_unidad" class="hover:bg-gray-50">
               <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">
-                {{ unidad.codigo_unidad }}
+                {{  index + 1 }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                 {{ unidad.nombre }}
