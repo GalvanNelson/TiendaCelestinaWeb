@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('venta_id')->constrained('ventas', 'codigo_venta');
             $table->decimal('monto', 10, 2);
             $table->timestamp('fecha_pago');
-            $table->enum('metodo_pago', ['efectivo', 'transferencia', 'tarjeta', 'cheque']);
+            $table->enum('metodo_pago', ['efectivo', 'qr']);
             $table->string('referencia', 100)->nullable();
             $table->foreignId('usuario_registro_id')->constrained('users'); // Usuario que registró el pago
             $table->text('notas')->nullable();

@@ -137,6 +137,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('pagos', [PagoController::class, 'store'])->name('pagos.store');
     Route::delete('pagos/{pago}', [PagoController::class, 'destroy'])->name('pagos.destroy');
 
+    // Rutas protegidas con autenticación
+    Route::middleware(['auth:sanctum'])->group(function () {
+        // Listar métodos de pago habilitados
+        Route::get('/pagos/metodos-habilitados', [PagoController::class, 'listarMetodosHabilitados']);
+
+        // Generar QR
+        Route::post('/pagos/qr/generar', [PagoController::class, 'pagarConQR']);
+
+        // Verificar estado del pago
+        Route::post('/pagos/qr/verificar', [PagoController::class, 'verificarPago']);
+
+        // Confirmar pago manualmente
+        Route::post('/pagos/qr/confirmar', [PagoController::class, 'confirmarPagoQR']);
+    });
+
+    // Callback de Pago Fácil (sin autenticación - webhook público)
+    Route::post('/pagos/callback', [PagoController::class, 'callbackPagoQR']);
+
     // ========================================
     // CUENTAS POR COBRAR
     // ========================================

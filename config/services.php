@@ -35,4 +35,20 @@ return [
         ],
     ],
 
+    'pagofacil' => [
+        // Credenciales de autenticación
+        'token_service' => env('PAGOFACIL_TOKEN_SERVICE'),
+        'token_secret' => env('PAGOFACIL_TOKEN_SECRET'),
+
+        // Configuración del comercio
+        'client_code' => env('PAGOFACIL_CLIENT_CODE', 'GRUPO14SA'),
+        'payment_method_id' => env('PAGOFACIL_PAYMENT_METHOD_ID', 4),
+
+        // URL de callback
+        'callback_url' => env('PAGOFACIL_CALLBACK_URL', env('APP_URL') . '/api/pagos/callback'),
+
+        // URLs de la API
+        'api_base_url' => 'https://masterqr.pagofacil.com.bo/api/services/v2',
+    ],
+
 ];
