@@ -3,7 +3,10 @@
 use App\Enum\PermissionEnum;
 use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\ClienteController;
+use App\Http\Controllers\CuentaPorCobrarController;
+use App\Http\Controllers\CuotaController;
 use App\Http\Controllers\EntradaStockController;
+use App\Http\Controllers\PagoController;
 use App\Http\Controllers\SalidaStockController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\ProfileController;
@@ -74,6 +77,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/', [ProductoController::class, 'index'])->name('productos.index');
         Route::post('/', [ProductoController::class, 'store'])->name('productos.store');
         Route::put('/{producto}', [ProductoController::class, 'update'])->name('productos.update');
+        Route::post('/{producto}', [ProductoController::class, 'update'])->name('productos.update');
         Route::delete('/{producto}', [ProductoController::class, 'destroy'])->name('productos.destroy');
 
         // Categorías
@@ -126,4 +130,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('ventas.destroy')
             ->middleware('permission:' . PermissionEnum::DELETE_SALES->value);
     });
+    // ========================================
+    // PAGOS
+    // ========================================
+    Route::get('pagos', [PagoController::class, 'index'])->name('pagos.index');
+    Route::post('pagos', [PagoController::class, 'store'])->name('pagos.store');
+    Route::delete('pagos/{pago}', [PagoController::class, 'destroy'])->name('pagos.destroy');
+
+    // ========================================
+    // CUENTAS POR COBRAR
+    // ========================================
+    Route::get('cuentas-por-cobrar', [CuentaPorCobrarController::class, 'index'])->name('cuentas-cobrar.index');
+    Route::get('cuentas-por-cobrar/{cuentaPorCobrar}', [CuentaPorCobrarController::class, 'show'])->name('cuentas-cobrar.show');
+    Route::post('cuentas-por-cobrar/{cuentaPorCobrar}/cuotas', [CuentaPorCobrarController::class, 'generarCuotas'])->name('cuentas-cobrar.generar-cuotas');
+
+    // ========================================
+    // CUOTAS
+    // ========================================
+    Route::put('cuotas/{cuota}/pagar', [CuotaController::class, 'marcarPagada'])->name('cuotas.pagar');
 });

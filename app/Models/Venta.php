@@ -66,17 +66,17 @@ class Venta extends Model
 
     public function detalles()
     {
-        //return $this->hasMany(DetalleVenta::class, 'venta', 'codigo_venta');
+        return $this->hasMany(DetalleVenta::class, 'venta', 'codigo_venta');
     }
 
     public function cuentaPorCobrar()
     {
-        //return $this->hasOne(CuentaPorCobrar::class, 'venta', 'codigo_venta');
+        return $this->hasOne(CuentaPorCobrar::class, 'venta', 'codigo_venta');
     }
 
     public function pagos()
     {
-        //return $this->hasMany(Pago::class, 'venta', 'codigo_venta');
+        return $this->hasMany(Pago::class, 'venta', 'codigo_venta');
     }
 
     // Scopes

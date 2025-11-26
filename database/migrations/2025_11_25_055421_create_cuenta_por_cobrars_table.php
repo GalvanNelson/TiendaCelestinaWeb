@@ -13,16 +13,20 @@ return new class extends Migration
     {
         Schema::create('cuenta_por_cobrars', function (Blueprint $table) {
             $table->id('codigo_cuenta');
-            $table->foreignId('venta')->unique()->constrained('ventas', 'codigo_venta')->onDelete('cascade');
+            $table->unsignedBigInteger('venta');
             $table->decimal('monto_total', 10, 2);
             $table->decimal('monto_pagado', 10, 2)->default(0);
             $table->decimal('saldo_pendiente', 10, 2);
             $table->date('fecha_vencimiento')->nullable();
             $table->enum('estado', ['pendiente', 'parcial', 'pagado', 'vencido'])->default('pendiente');
+            $table->text('notas')->nullable();
             $table->timestamps();
 
-            $table->index('estado');
-            $table->index('fecha_vencimiento');
+            // Relación con ventas
+            $table->foreign('venta')
+                ->references('codigo_venta')
+                ->on('ventas')
+                ->onDelete('cascade');
         });
     }
 

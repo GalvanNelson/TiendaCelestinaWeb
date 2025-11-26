@@ -57,16 +57,19 @@ const openCreateModal = () => {
 };
 
 const openEditModal = (producto) => {
+
   editingProducto.value = producto;
   imagePreview.value = null;
+
   form.nombre = producto.nombre;
   form.descripcion = producto.descripcion || '';
   form.precio_unitario = producto.precio_unitario;
   form.stock = producto.stock;
-  form.categoria_codigo = producto.categoria_codigo;
-  form.unidad_codigo = producto.unidad_codigo;
+  form.categoria_codigo = Number(producto.categoria_codigo);
+  form.unidad_codigo = Number(producto.unidad_codigo);
   form.imagen = null;
   form.clearErrors();
+
   showFormModal.value = true;
 };
 
@@ -114,18 +117,26 @@ const handleFileChange = (event) => {
   }
 };
 
-// Submit del formulario
 const submitForm = () => {
   if (editingProducto.value) {
-    form.post(route('productos.update', editingProducto.value.codigo_producto), {
-      _method: 'put',
-      onSuccess: () => closeFormModal(),
-      forceFormData: true
+    form.transform((data) => ({
+      ...data,
+      _method: 'PUT',
+      // Convertir a número solo al enviar
+      categoria_codigo: Number(data.categoria_codigo),
+      unidad_codigo: Number(data.unidad_codigo)
+    })).post(route('productos.update', editingProducto.value.codigo_producto), {
+      onSuccess: () => {
+        closeFormModal();
+      },
+      forceFormData: true,
+      preserveScroll: true
     });
   } else {
     form.post(route('productos.store'), {
       onSuccess: () => closeFormModal(),
-      forceFormData: true
+      forceFormData: true,
+      preserveScroll: true
     });
   }
 };

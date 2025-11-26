@@ -26,7 +26,7 @@ return new class extends Migration
                 ->on('categorias')
                 ->nullOnDelete();
 
-            // FK hacia unidad_medidas.codigo_unidad
+            // FK hacia unidad_medidas.codigo_medida
             $table->integer('unidad_codigo')->nullable();
             $table->foreign('unidad_codigo')
                 ->references('codigo_medida')
