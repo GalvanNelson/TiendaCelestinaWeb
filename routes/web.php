@@ -130,17 +130,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('ventas.destroy')
             ->middleware('permission:' . PermissionEnum::DELETE_SALES->value);
     });
-
-    // Pagos
+    // ========================================
+    // PAGOS
+    // ========================================
     Route::get('pagos', [PagoController::class, 'index'])->name('pagos.index');
     Route::post('pagos', [PagoController::class, 'store'])->name('pagos.store');
     Route::delete('pagos/{pago}', [PagoController::class, 'destroy'])->name('pagos.destroy');
 
-    // Cuentas por Cobrar
+    // ========================================
+    // CUENTAS POR COBRAR
+    // ========================================
     Route::get('cuentas-por-cobrar', [CuentaPorCobrarController::class, 'index'])->name('cuentas-cobrar.index');
     Route::get('cuentas-por-cobrar/{cuentaPorCobrar}', [CuentaPorCobrarController::class, 'show'])->name('cuentas-cobrar.show');
     Route::post('cuentas-por-cobrar/{cuentaPorCobrar}/cuotas', [CuentaPorCobrarController::class, 'generarCuotas'])->name('cuentas-cobrar.generar-cuotas');
 
-    // Cuotas
+    // ========================================
+    // CUOTAS
+    // ========================================
     Route::put('cuotas/{cuota}/pagar', [CuotaController::class, 'marcarPagada'])->name('cuotas.pagar');
 });

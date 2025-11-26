@@ -124,6 +124,20 @@ class HandleInertiaRequests extends Middleware
                 'permission' => PermissionEnum::VIEW_SALES->value,
             ],
             [
+                'id' => 'pagos',
+                'label' => 'Pagos',
+                'icon' => 'Cash',
+                'route' => 'pagos.index',
+                'permission' => PermissionEnum::VIEW_PAGOS->value,
+            ],
+            [
+                'id' => 'cuentas-cobrar',
+                'label' => 'Cuentas por Cobrar',
+                'icon' => 'Wallet',
+                'route' => 'cuentas-cobrar.index',
+                'permission' => PermissionEnum::VIEW_CUENTAS_COBRAR->value,
+            ],
+            [
                 'id' => 'settings',
                 'label' => 'Configuración',
                 'icon' => 'Settings',

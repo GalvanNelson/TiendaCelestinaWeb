@@ -9,7 +9,7 @@ class CuentaPorCobrar extends Model
 {
     use HasFactory;
 
-    protected $table = 'cuentas_por_cobrar';
+    protected $table = 'cuenta_por_cobrars';
     protected $primaryKey = 'codigo_cuenta';
 
     protected $fillable = [
@@ -19,6 +19,7 @@ class CuentaPorCobrar extends Model
         'saldo_pendiente',
         'fecha_vencimiento',
         'estado',
+        'notas'
     ];
 
     protected $casts = [
@@ -28,17 +29,25 @@ class CuentaPorCobrar extends Model
         'fecha_vencimiento' => 'date',
     ];
 
+    /**
+     * Relación con venta
+     */
     public function venta()
     {
         return $this->belongsTo(Venta::class, 'venta', 'codigo_venta');
     }
 
-    public function cuotas()
+    /**
+     * Relación con pagos
+     */
+    public function pagos()
     {
-        return $this->hasMany(Cuota::class, 'cuenta_por_cobrar', 'codigo_cuenta');
+        return $this->hasMany(Pago::class, 'venta', 'venta');
     }
 
-    // Actualizar estado según saldo
+    /**
+     * Actualizar estado de la cuenta
+     */
     public function actualizarEstado()
     {
         if ($this->saldo_pendiente <= 0) {
@@ -50,6 +59,7 @@ class CuentaPorCobrar extends Model
         } else {
             $this->estado = 'pendiente';
         }
+
         $this->save();
     }
 }

@@ -192,7 +192,7 @@ class VentaController extends Controller
                     'monto_total' => $total,
                     'monto_pagado' => 0,
                     'saldo_pendiente' => $total,
-                    'fecha_vencimiento' => $validated['fecha_vencimiento'],
+                    'fecha_vencimiento' => now()->addDays(30),
                     'estado' => 'pendiente',
                 ]);
             }
