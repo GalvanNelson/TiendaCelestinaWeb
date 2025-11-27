@@ -240,29 +240,39 @@ class PagoController extends Controller
      */
     public function pagarConQR(Request $request)
     {
-        $validated = $request->validate([
-            'venta_id' => 'required|exists:ventas,codigo_venta',
-            'monto' => 'required|numeric|min:0.1',
-            'cliente_name' => 'required|string|max:255',
-            'document_type' => 'required|integer|in:1,2,3,4,5', // 1=CI, 2=NIT, 3=Pasaporte, etc
-            'document_id' => 'required|string|max:50',
-            'phone_number' => 'required|string|max:20',
-            'email' => 'required|email|max:255',
-        ], [
-            'venta_id.required' => 'La venta es obligatoria.',
-            'monto.required' => 'El monto es obligatorio.',
-            'monto.min' => 'El monto mínimo es 0.1',
-            'cliente_name.required' => 'El nombre del cliente es obligatorio.',
-            'document_id.required' => 'El documento del cliente es obligatorio.',
-            'phone_number.required' => 'El teléfono es obligatorio.',
-            'email.required' => 'El email es obligatorio.',
-        ]);
-
-        DB::beginTransaction();
         try {
-            Log::info('Iniciando generación de QR', ['request' => $validated]);
+            // Log inicial
+            Log::info('=== INICIO: Generar QR ===', [
+                'user_id' => $request->user()?->id,
+                'request_data' => $request->all()
+            ]);
 
-            $venta = Venta::with('detalles.producto')->findOrFail($validated['venta_id']);
+            // Validación
+            $validated = $request->validate([
+                'venta_id' => 'required|exists:ventas,codigo_venta',
+                'monto' => 'required|numeric|min:0.1',
+                'cliente_name' => 'required|string|max:255',
+                'document_type' => 'required|integer|in:1,2,3,4,5',
+                'document_id' => 'required|string|max:50',
+                'phone_number' => 'required|string|max:20',
+                'email' => 'required|email|max:255',
+            ]);
+
+            Log::info('Validación exitosa', ['validated' => $validated]);
+
+            DB::beginTransaction();
+
+            // Verificar venta
+            $venta = Venta::with('detalles.producto')->find($validated['venta_id']);
+
+            if (!$venta) {
+                throw new \Exception('Venta no encontrada');
+            }
+
+            Log::info('Venta encontrada', [
+                'venta_id' => $venta->codigo_venta,
+                'tipo_pago' => $venta->tipo_pago
+            ]);
 
             if ($venta->tipo_pago !== 'credito') {
                 throw new \Exception('Esta venta no es a crédito.');
@@ -279,69 +289,85 @@ class PagoController extends Controller
             }
 
             // Obtener token de autenticación
+            Log::info('Obteniendo token de Pago Fácil...');
             $token = $this->obtenerTokenPagoFacil();
+            Log::info('Token obtenido exitosamente');
 
-            // Generar número de pago único (paymentNumber)
+            // Generar número de pago único
             $paymentNumber = config('services.pagofacil.client_code', 'GRUPO14SA') .
                            '-' . $venta->numero_venta .
                            '-' . time();
 
-            // Preparar detalle de la orden según la documentación
+            Log::info('Payment number generado', ['paymentNumber' => $paymentNumber]);
+
+            // Preparar detalle de la orden
             $orderDetail = [];
             $serial = 1;
 
-            foreach ($venta->detalles as $detalle) {
+            if ($venta->detalles && $venta->detalles->count() > 0) {
+                foreach ($venta->detalles as $detalle) {
+                    $orderDetail[] = [
+                        "serial" => $serial++,
+                        "product" => $detalle->producto->nombre ?? 'Producto',
+                        "quantity" => (int)$detalle->cantidad,
+                        "price" => floatval($detalle->precio_unitario),
+                        "discount" => floatval($detalle->descuento ?? 0),
+                        "total" => floatval($detalle->subtotal)
+                    ];
+                }
+            } else {
+                // Si no hay detalles, crear uno genérico
                 $orderDetail[] = [
-                    "serial" => $serial++,
-                    "product" => $detalle->producto->nombre ?? 'Producto',
-                    "quantity" => (int)$detalle->cantidad,
-                    "price" => floatval($detalle->precio_unitario),
-                    "discount" => floatval($detalle->descuento ?? 0),
-                    "total" => floatval($detalle->subtotal)
+                    "serial" => 1,
+                    "product" => "Pago de venta " . $venta->numero_venta,
+                    "quantity" => 1,
+                    "price" => floatval($validated['monto']),
+                    "discount" => 0,
+                    "total" => floatval($validated['monto'])
                 ];
             }
 
-            // Preparar payload según documentación oficial
+            // Preparar payload
             $payload = [
                 'paymentMethod' => (int)config('services.pagofacil.payment_method_id', 4),
                 'clientName' => $validated['cliente_name'],
-                'documentType' => $validated['document_type'],
+                'documentType' => (int)$validated['document_type'],
                 'documentId' => $validated['document_id'],
                 'phoneNumber' => $validated['phone_number'],
                 'email' => $validated['email'],
                 'paymentNumber' => $paymentNumber,
                 'amount' => floatval($validated['monto']),
-                'currency' => 2, // 2 = BOB (Bolivianos)
+                'currency' => 2,
                 'clientCode' => config('services.pagofacil.client_code', 'GRUPO14SA'),
                 'callbackUrl' => config('services.pagofacil.callback_url', url('/api/pagos/callback')),
                 'orderDetail' => $orderDetail
             ];
 
-            Log::info('Payload para Pago Fácil', ['payload' => $payload]);
+            Log::info('Payload preparado', ['payload' => $payload]);
 
             // Llamar a la API de Pago Fácil
+            Log::info('Llamando a API de Pago Fácil...');
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $token,
                 'Response-Language' => 'es'
             ])->timeout(30)->post($this->apiBaseUrl . '/generate-qr', $payload);
 
+            Log::info('Respuesta recibida de Pago Fácil', [
+                'status' => $response->status(),
+                'body' => $response->json()
+            ]);
+
             if (!$response->successful()) {
-                Log::error('Error en API Pago Fácil', [
-                    'status' => $response->status(),
-                    'response' => $response->json()
-                ]);
-                throw new \Exception('Error al generar QR: ' . ($response->json()['message'] ?? 'Error desconocido'));
+                throw new \Exception('Error en API Pago Fácil: ' . ($response->json()['message'] ?? 'Error desconocido'));
             }
 
             $qrData = $response->json();
-            Log::info('Respuesta de Pago Fácil', ['response' => $qrData]);
 
-            // Validar respuesta según documentación
             if ($qrData['error'] !== 0) {
                 throw new \Exception($qrData['message'] ?? 'Error al generar QR');
             }
 
-            // Extraer datos según la estructura oficial
+            // Extraer datos
             $values = $qrData['values'];
             $transactionId = $values['transactionId'] ?? null;
             $qrBase64 = $values['qrBase64'] ?? null;
@@ -353,7 +379,8 @@ class PagoController extends Controller
             // Construir imagen base64 completa
             $qrImage = 'data:image/png;base64,' . $qrBase64;
 
-            // Registrar el pago como pendiente
+            // Registrar el pago
+            Log::info('Registrando pago en base de datos...');
             $pago = Pago::create([
                 'venta' => $validated['venta_id'],
                 'monto' => $validated['monto'],
@@ -368,7 +395,11 @@ class PagoController extends Controller
                           "Fecha expiración: " . ($values['expirationDate'] ?? 'N/A')
             ]);
 
+            Log::info('Pago registrado', ['pago_id' => $pago->codigo_pago]);
+
             DB::commit();
+
+            Log::info('=== FIN: QR generado exitosamente ===');
 
             return response()->json([
                 'success' => true,
@@ -385,16 +416,28 @@ class PagoController extends Controller
                 ]
             ]);
 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('Error de validación', [
+                'errors' => $e->errors()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación',
+                'errors' => $e->errors()
+            ], 422);
+
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Error al generar QR', [
-                'error' => $e->getMessage(),
+            Log::error('=== ERROR al generar QR ===', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
                 'trace' => $e->getTraceAsString()
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Error al generar QR: ' . $e->getMessage()
+                'message' => $e->getMessage()
             ], 500);
         }
     }

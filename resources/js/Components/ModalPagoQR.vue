@@ -1,6 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
-import { useForm } from '@inertiajs/vue3';
+import { ref, computed, watch } from 'vue';
 import axios from 'axios';
 import Modal from '@/Components/Modal.vue';
 import InputLabel from '@/Components/InputLabel.vue';
@@ -34,20 +33,44 @@ const success = ref(null);
 const pagoConfirmado = ref(false);
 
 // Formulario para generar QR
-const form = useForm({
-    venta_id: computed(() => props.venta?.codigo_venta),
-    monto: computed(() => props.venta?.saldo_pendiente || 0),
-    cliente_name: computed(() => props.venta?.cliente?.name || ''),
-    document_type: 1, // 1=CI por defecto
-    document_id: computed(() => props.venta?.cliente?.nit || ''),
-    phone_number: computed(() => props.venta?.cliente?.telefono || ''),
-    email: computed(() => props.venta?.cliente?.email || ''),
+const formData = ref({
+    venta_id: null,
+    monto: 0,
+    cliente_name: '',
+    document_type: 1,
+    document_id: '',
+    phone_number: '',
+    email: '',
 });
+
+// Watch para actualizar el formulario cuando cambie la venta
+watch(() => props.venta, (newVenta) => {
+    if (newVenta) {
+        formData.value = {
+            venta_id: newVenta.codigo_venta,
+            monto: parseFloat(newVenta.saldo_pendiente) || 0,
+            cliente_name: newVenta.cliente?.name || newVenta.cliente || '',
+            document_type: 1,
+            document_id: newVenta.cliente?.nit || '',
+            phone_number: newVenta.cliente?.telefono || '',
+            email: newVenta.cliente?.email || '',
+        };
+    }
+}, { immediate: true });
 
 // Computed
 const saldoPendiente = computed(() => {
     return parseFloat(props.venta?.saldo_pendiente || 0);
 });
+
+const totalVenta = computed(() => {
+    return parseFloat(props.venta?.total || 0);
+});
+
+const formatCurrency = (value) => {
+    const number = parseFloat(value) || 0;
+    return number.toFixed(2);
+};
 
 // Métodos
 const generarQR = async () => {
@@ -58,14 +81,11 @@ const generarQR = async () => {
     success.value = null;
 
     try {
-        const response = await axios.post('/api/pagos/qr/generar', {
-            venta_id: form.venta_id,
-            monto: form.monto,
-            cliente_name: form.cliente_name,
-            document_type: form.document_type,
-            document_id: form.document_id,
-            phone_number: form.phone_number,
-            email: form.email,
+        const response = await axios.post('/api/pagos/qr/generar', formData.value, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
         });
 
         if (response.data.success) {
@@ -79,7 +99,7 @@ const generarQR = async () => {
         }
     } catch (err) {
         error.value = err.response?.data?.message || 'Error al generar el QR';
-        console.error('Error:', err);
+        console.error('Error al generar QR:', err);
     } finally {
         loading.value = false;
     }
@@ -89,7 +109,6 @@ const verificarPago = async () => {
     if (!numeroTransaccion.value || verificando.value) return;
 
     verificando.value = true;
-    error.value = null;
 
     try {
         const response = await axios.post('/api/pagos/qr/verificar', {
@@ -104,8 +123,6 @@ const verificarPago = async () => {
             } else if (estado === 'rechazado' || estado === 'cancelado') {
                 detenerVerificacion();
                 error.value = `Pago ${estado}. Por favor, intente nuevamente.`;
-            } else {
-                success.value = `Estado del pago: ${estado}`;
             }
         }
     } catch (err) {
@@ -137,7 +154,7 @@ const confirmarPago = async () => {
         }
     } catch (err) {
         error.value = err.response?.data?.message || 'Error al confirmar el pago';
-        console.error('Error:', err);
+        console.error('Error al confirmar:', err);
     }
 };
 
@@ -145,7 +162,7 @@ let intervaloVerificacion = null;
 
 const iniciarVerificacionAutomatica = () => {
     let intentos = 0;
-    const maxIntentos = 60; // 5 minutos
+    const maxIntentos = 60; // 5 minutos (60 * 5 segundos)
 
     intervaloVerificacion = setInterval(async () => {
         intentos++;
@@ -179,11 +196,10 @@ const resetearFormulario = () => {
     error.value = null;
     success.value = null;
     pagoConfirmado.value = false;
-    form.reset();
 };
 
 const pagarTodo = () => {
-    form.monto = saldoPendiente.value;
+    formData.value.monto = saldoPendiente.value;
 };
 
 // Limpiar al desmontar
@@ -209,15 +225,21 @@ onUnmounted(() => {
                 <div class="grid grid-cols-3 gap-4">
                     <div>
                         <p class="text-xs text-gray-600 mb-1">Cliente</p>
-                        <p class="text-sm font-semibold text-gray-900">{{ venta?.cliente?.name }}</p>
+                        <p class="text-sm font-semibold text-gray-900">
+                            {{ venta?.cliente?.name || venta?.cliente }}
+                        </p>
                     </div>
                     <div>
                         <p class="text-xs text-gray-600 mb-1">Total Venta</p>
-                        <p class="text-sm font-semibold text-gray-900">Bs {{ venta?.total?.toFixed(2) }}</p>
+                        <p class="text-sm font-semibold text-gray-900">
+                            Bs {{ formatCurrency(totalVenta) }}
+                        </p>
                     </div>
                     <div>
                         <p class="text-xs text-gray-600 mb-1">Saldo Pendiente</p>
-                        <p class="text-lg font-bold text-red-600">Bs {{ saldoPendiente.toFixed(2) }}</p>
+                        <p class="text-lg font-bold text-red-600">
+                            Bs {{ formatCurrency(saldoPendiente) }}
+                        </p>
                     </div>
                 </div>
             </div>
@@ -231,7 +253,7 @@ onUnmounted(() => {
                         <div class="flex gap-2">
                             <TextInput
                                 id="monto"
-                                v-model.number="form.monto"
+                                v-model.number="formData.monto"
                                 type="number"
                                 step="0.01"
                                 min="0.1"
@@ -252,7 +274,7 @@ onUnmounted(() => {
                             <InputLabel for="cliente_name">Nombre Completo *</InputLabel>
                             <TextInput
                                 id="cliente_name"
-                                v-model="form.cliente_name"
+                                v-model="formData.cliente_name"
                                 required
                                 placeholder="Juan Pérez"
                             />
@@ -262,7 +284,7 @@ onUnmounted(() => {
                             <InputLabel for="email">Email *</InputLabel>
                             <TextInput
                                 id="email"
-                                v-model="form.email"
+                                v-model="formData.email"
                                 type="email"
                                 required
                                 placeholder="cliente@ejemplo.com"
@@ -275,9 +297,9 @@ onUnmounted(() => {
                             <InputLabel for="document_type">Tipo Documento *</InputLabel>
                             <select
                                 id="document_type"
-                                v-model.number="form.document_type"
+                                v-model.number="formData.document_type"
                                 required
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             >
                                 <option value="1">CI</option>
                                 <option value="2">NIT</option>
@@ -291,7 +313,7 @@ onUnmounted(() => {
                             <InputLabel for="document_id">N° Documento *</InputLabel>
                             <TextInput
                                 id="document_id"
-                                v-model="form.document_id"
+                                v-model="formData.document_id"
                                 required
                                 placeholder="1234567"
                             />
@@ -301,7 +323,7 @@ onUnmounted(() => {
                             <InputLabel for="phone_number">Teléfono *</InputLabel>
                             <TextInput
                                 id="phone_number"
-                                v-model="form.phone_number"
+                                v-model="formData.phone_number"
                                 type="tel"
                                 required
                                 placeholder="75540850"
@@ -327,9 +349,15 @@ onUnmounted(() => {
                 <div v-if="!pagoConfirmado">
                     <h3 class="text-lg font-semibold mb-4">Escanea el QR para pagar</h3>
                     <div class="flex justify-center mb-4">
-                        <img :src="qrGenerado" alt="Código QR" class="max-w-xs border-4 border-blue-500 rounded-lg shadow-lg">
+                        <img
+                            :src="qrGenerado"
+                            alt="Código QR"
+                            class="max-w-xs border-4 border-blue-500 rounded-lg shadow-lg"
+                        >
                     </div>
-                    <p class="text-2xl font-bold text-green-600 mb-4">Bs {{ form.monto?.toFixed(2) }}</p>
+                    <p class="text-2xl font-bold text-green-600 mb-4">
+                        Bs {{ formatCurrency(formData.monto) }}
+                    </p>
 
                     <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
                         <div v-if="verificando" class="flex items-center justify-center gap-2">
@@ -341,9 +369,15 @@ onUnmounted(() => {
                         </p>
                     </div>
 
-                    <SecondaryButton @click="verificarPago" :disabled="verificando">
-                        Verificar Ahora
-                    </SecondaryButton>
+                    <div class="flex justify-center gap-3">
+                        <SecondaryButton @click="verificarPago" :disabled="verificando">
+                            <Loader v-if="verificando" :size="16" class="mr-2 animate-spin" />
+                            Verificar Ahora
+                        </SecondaryButton>
+                        <SecondaryButton @click="cerrarModal">
+                            Cancelar
+                        </SecondaryButton>
+                    </div>
                 </div>
 
                 <!-- Pago Confirmado -->
@@ -366,3 +400,18 @@ onUnmounted(() => {
         </div>
     </Modal>
 </template>
+
+<style scoped>
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+</style>

@@ -42,7 +42,7 @@ class CuentaPorCobrar extends Model
      */
     public function pagos()
     {
-        return $this->hasMany(Pago::class, 'venta', 'venta');
+        return $this->hasMany(Pago::class, 'venta_id', 'venta');
     }
 
     /**
