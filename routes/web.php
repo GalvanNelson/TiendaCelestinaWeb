@@ -133,9 +133,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // ========================================
     // PAGOS
     // ========================================
-    Route::get('pagos', [PagoController::class, 'index'])->name('pagos.index');
-    Route::post('pagos', [PagoController::class, 'store'])->name('pagos.store');
-    Route::delete('pagos/{pago}', [PagoController::class, 'destroy'])->name('pagos.destroy');
+    Route::middleware(['auth'])->group(function () {
+        Route::get('/pagos', [PagoController::class, 'index'])->name('pagos.index');
+        Route::post('/pagos', [PagoController::class, 'store'])->name('pagos.store');
+        Route::delete('/pagos/{pago}', [PagoController::class, 'destroy'])->name('pagos.destroy');
+    });
+
+
 
     // ========================================
     // CUENTAS POR COBRAR

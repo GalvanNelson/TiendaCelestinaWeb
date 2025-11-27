@@ -12,7 +12,7 @@ class Pago extends Model
     protected $primaryKey = 'codigo_pago';
 
     protected $fillable = [
-        'venta',
+        'venta_id',
         'monto',
         'fecha_pago',
         'metodo_pago',
@@ -28,7 +28,7 @@ class Pago extends Model
 
     public function venta()
     {
-        return $this->belongsTo(Venta::class, 'venta', 'codigo_venta');
+        return $this->belongsTo(Venta::class, 'venta_id', 'codigo_venta');
     }
 
     public function usuarioRegistro()

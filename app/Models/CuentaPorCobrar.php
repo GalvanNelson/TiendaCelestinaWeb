@@ -13,7 +13,7 @@ class CuentaPorCobrar extends Model
     protected $primaryKey = 'codigo_cuenta';
 
     protected $fillable = [
-        'venta',
+        'venta_id',
         'monto_total',
         'monto_pagado',
         'saldo_pendiente',
@@ -34,7 +34,7 @@ class CuentaPorCobrar extends Model
      */
     public function venta()
     {
-        return $this->belongsTo(Venta::class, 'venta', 'codigo_venta');
+        return $this->belongsTo(Venta::class, 'venta_id', 'codigo_venta');
     }
 
     /**
@@ -42,7 +42,7 @@ class CuentaPorCobrar extends Model
      */
     public function pagos()
     {
-        return $this->hasMany(Pago::class, 'venta', 'venta');
+        return $this->hasMany(Pago::class, 'venta_id', 'venta');
     }
 
     /**

@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-
 class Venta extends Model
 {
     use HasFactory;
@@ -34,7 +33,6 @@ class Venta extends Model
         'total' => 'decimal:2',
     ];
 
-    // Generar numero de venta automaticamente
     protected static function boot()
     {
         parent::boot();
@@ -64,19 +62,20 @@ class Venta extends Model
         return $this->belongsTo(User::class, 'vendedor_id');
     }
 
+    // ✅ Todas usan venta_id ahora
     public function detalles()
     {
-        return $this->hasMany(DetalleVenta::class, 'venta', 'codigo_venta');
+        return $this->hasMany(DetalleVenta::class, 'venta_id', 'codigo_venta');
     }
 
     public function cuentaPorCobrar()
     {
-        return $this->hasOne(CuentaPorCobrar::class, 'venta', 'codigo_venta');
+        return $this->hasOne(CuentaPorCobrar::class, 'venta_id', 'codigo_venta');
     }
 
     public function pagos()
     {
-        return $this->hasMany(Pago::class, 'venta', 'codigo_venta');
+        return $this->hasMany(Pago::class, 'venta_id', 'codigo_venta');
     }
 
     // Scopes
@@ -95,3 +94,4 @@ class Venta extends Model
         return $query->where('tipo_pago', 'credito');
     }
 }
+

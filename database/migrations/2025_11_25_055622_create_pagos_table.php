@@ -13,14 +13,16 @@ return new class extends Migration
     {
         Schema::create('pagos', function (Blueprint $table) {
             $table->id('codigo_pago');
-            $table->foreignId('venta_id')->constrained('ventas', 'codigo_venta');
+            $table->unsignedBigInteger('venta_id');
             $table->decimal('monto', 10, 2);
             $table->timestamp('fecha_pago');
-            $table->enum('metodo_pago', ['efectivo', 'transferencia', 'tarjeta', 'cheque']);
+            $table->enum('metodo_pago', ['efectivo', 'qr']);
             $table->string('referencia', 100)->nullable();
             $table->foreignId('usuario_registro_id')->constrained('users'); // Usuario que registró el pago
             $table->text('notas')->nullable();
             $table->timestamps();
+
+            $table->foreign('venta_id')->references('codigo_venta')->on('ventas')->onDelete('cascade');
 
             $table->index('venta_id');
             $table->index('fecha_pago');
