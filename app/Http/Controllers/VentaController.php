@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Traits\HasRolePermissionChecks;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
 
@@ -152,9 +153,12 @@ class VentaController extends Controller
                 'notas' => $validated['notas'] ?? null,
             ]);
 
+            // Refrescar para obtener el codigo_venta generado
+            $venta->refresh();
+
             // Crear detalles y actualizar stock
             foreach ($validated['detalles'] as $detalle) {
-                $producto = Producto::where('codigo_producto', $detalle['producto'])->first();
+                $producto = Producto::where('codigo_producto', $detalle['producto'])->firstOrFail();
 
                 // Verificar stock
                 if ($producto->stock < $detalle['cantidad']) {
@@ -163,7 +167,7 @@ class VentaController extends Controller
 
                 $subtotalDetalle = $detalle['cantidad'] * $detalle['precio_unitario'];
 
-                // Crear detalle de venta
+                // ✅ Crear detalle de venta
                 DetalleVenta::create([
                     'venta_id' => $venta->codigo_venta,
                     'producto_id' => $detalle['producto'],
@@ -187,12 +191,15 @@ class VentaController extends Controller
 
             // Si es a crédito, crear cuenta por cobrar
             if ($validated['tipo_pago'] === 'credito') {
+                $fechaVencimiento = $validated['fecha_vencimiento'] ?? now()->addDays(30);
+
+                // ✅ Crear cuenta por cobrar - ahora usa venta_id
                 CuentaPorCobrar::create([
                     'venta_id' => $venta->codigo_venta,
                     'monto_total' => $total,
                     'monto_pagado' => 0,
                     'saldo_pendiente' => $total,
-                    'fecha_vencimiento' => now()->addDays(30),
+                    'fecha_vencimiento' => $fechaVencimiento,
                     'estado' => 'pendiente',
                 ]);
             }
@@ -201,8 +208,15 @@ class VentaController extends Controller
 
             return redirect()->route('ventas.index')
                 ->with('success', 'Venta registrada exitosamente. Número: ' . $venta->numero_venta);
+
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Error al crear venta:', [
+                'error' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile()
+            ]);
+
             return redirect()->back()
                 ->with('error', 'Error al registrar la venta: ' . $e->getMessage())
                 ->withInput();

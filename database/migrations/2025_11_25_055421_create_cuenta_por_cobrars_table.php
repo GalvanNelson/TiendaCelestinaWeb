@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('cuenta_por_cobrars', function (Blueprint $table) {
             $table->id('codigo_cuenta');
-            $table->unsignedBigInteger('venta');
+            $table->unsignedBigInteger('venta_id');
             $table->decimal('monto_total', 10, 2);
             $table->decimal('monto_pagado', 10, 2)->default(0);
             $table->decimal('saldo_pendiente', 10, 2);
@@ -23,10 +23,12 @@ return new class extends Migration
             $table->timestamps();
 
             // Relación con ventas
-            $table->foreign('venta')
+            $table->foreign('venta_id')
                 ->references('codigo_venta')
                 ->on('ventas')
                 ->onDelete('cascade');
+
+            $table->index('venta_id');
         });
     }
 
