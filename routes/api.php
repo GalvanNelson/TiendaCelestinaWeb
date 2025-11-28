@@ -9,19 +9,18 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 // Rutas protegidas con autenticación (web session para Inertia)
-Route::middleware(['web', 'auth'])->group(function () {
-    // Listar métodos de pago habilitados
-    Route::get('/pagos/metodos-habilitados', [PagoController::class, 'listarMetodosHabilitados']);
+Route::middleware(['auth:sanctum'])->group(function () {
 
-    // Generar QR
-    Route::post('/pagos/qr/generar', [PagoController::class, 'pagarConQR']);
+    Route::post('/pagos/qr/generar', [PagoController::class, 'pagarConQR'])
+        ->name('pagos.qr.generar');  // ⭐ IMPORTANTE: El nombre
 
-    // Verificar estado del pago
-    Route::post('/pagos/qr/verificar', [PagoController::class, 'verificarPago']);
+    Route::post('/pagos/qr/verificar', [PagoController::class, 'verificarPago'])
+        ->name('pagos.qr.verificar');
 
-    // Confirmar pago manualmente
-    Route::post('/pagos/qr/confirmar', [PagoController::class, 'confirmarPagoQR']);
+    Route::post('/pagos/qr/confirmar', [PagoController::class, 'confirmarPagoQR'])
+        ->name('pagos.qr.confirmar');
 });
 
 // Callback de Pago Fácil (sin autenticación - webhook público)
-Route::post('/pagos/callback', [PagoController::class, 'callbackPagoQR']);
+Route::post('/pagos/callback', [PagoController::class, 'callbackPagoQR'])
+    ->name('pagos.callback');
