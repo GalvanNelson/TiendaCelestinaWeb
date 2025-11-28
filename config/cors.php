@@ -1,21 +1,11 @@
 <?php
 
 return [
-
-    /*
-    |--------------------------------------------------------------------------
-    | Cross-Origin Resource Sharing (CORS) Configuration
-    |--------------------------------------------------------------------------
-    */
-
     'paths' => ['api/*', 'sanctum/csrf-cookie'],
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => [
-        env('APP_URL', 'http://localhost'),
-        'https://www.tecnoweb.org.bo',
-    ],
+    'allowed_origins' => ['*'], // En producción, especifica los dominios
 
     'allowed_origins_patterns' => [],
 
@@ -25,6 +15,5 @@ return [
 
     'max_age' => 0,
 
-    'supports_credentials' => true,  // ⭐ CRÍTICO para Sanctum
-
+    'supports_credentials' => false, // Importante si usas cookies/sesiones
 ];

@@ -24,7 +24,9 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         // Ejecutar todos los días a las 00:01
-        $schedule->command('cuentas:actualizar-vencidas')->dailyAt('00:01');
+        $schedule->command('cuotas:marcar-vencidas')
+            ->daily()
+            ->at('00:00');
     }
 
     /**

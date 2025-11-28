@@ -10,6 +10,7 @@ use App\Models\Producto;
 use App\Models\SalidaStock;
 use App\Models\Venta;
 use App\Models\User;
+use App\Services\CuotasService;
 use App\Traits\HasRolePermissionChecks;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -109,7 +110,7 @@ class VentaController extends Controller
 /**
      * Guardar nueva venta
      */
-    public function store(Request $request)
+    public function store(Request $request, CuotasService $cuotasService)
     {
         $validated = $request->validate([
             'cliente_id' => 'required|exists:users,id',
@@ -121,12 +122,17 @@ class VentaController extends Controller
             'detalles.*.producto' => 'required|exists:productos,codigo_producto',
             'detalles.*.cantidad' => 'required|numeric|min:0.01',
             'detalles.*.precio_unitario' => 'required|numeric|min:0',
-            'fecha_vencimiento' => 'required_if:tipo_pago,credito|nullable|date|after:fecha_venta',
+
+            // Nuevos campos para crédito
+            'numero_cuotas' => 'required_if:tipo_pago,credito|nullable|integer|min:2',
+            'monto_inicial' => 'nullable|numeric|min:0.1', // Opcional: pago inicial
+            'fecha_vencimiento' => 'nullable|date|after:fecha_venta', // Deprecated, ahora se calcula automático
         ], [
             'cliente_id.required' => 'El cliente es obligatorio.',
             'detalles.required' => 'Debe agregar al menos un producto.',
             'detalles.min' => 'Debe agregar al menos un producto.',
-            'fecha_vencimiento.required_if' => 'La fecha de vencimiento es obligatoria para ventas a crédito.',
+            'numero_cuotas.required_if' => 'El número de cuotas es obligatorio para ventas a crédito.',
+            'numero_cuotas.min' => 'El número mínimo de cuotas es 2.',
         ]);
 
         DB::beginTransaction();
@@ -153,21 +159,18 @@ class VentaController extends Controller
                 'notas' => $validated['notas'] ?? null,
             ]);
 
-            // Refrescar para obtener el codigo_venta generado
             $venta->refresh();
 
             // Crear detalles y actualizar stock
             foreach ($validated['detalles'] as $detalle) {
                 $producto = Producto::where('codigo_producto', $detalle['producto'])->firstOrFail();
 
-                // Verificar stock
                 if ($producto->stock < $detalle['cantidad']) {
                     throw new \Exception("Stock insuficiente para el producto: {$producto->nombre}");
                 }
 
                 $subtotalDetalle = $detalle['cantidad'] * $detalle['precio_unitario'];
 
-                // ✅ Crear detalle de venta
                 DetalleVenta::create([
                     'venta_id' => $venta->codigo_venta,
                     'producto_id' => $detalle['producto'],
@@ -176,10 +179,8 @@ class VentaController extends Controller
                     'subtotal' => $subtotalDetalle,
                 ]);
 
-                // Reducir stock
                 $producto->decrement('stock', $detalle['cantidad']);
 
-                // Registrar salida de stock
                 SalidaStock::create([
                     'codigo_producto' => $detalle['producto'],
                     'cantidad' => $detalle['cantidad'],
@@ -189,25 +190,43 @@ class VentaController extends Controller
                 ]);
             }
 
-            // Si es a crédito, crear cuenta por cobrar
+            // Si es a crédito, crear cuenta por cobrar y cuotas
             if ($validated['tipo_pago'] === 'credito') {
-                $fechaVencimiento = $validated['fecha_vencimiento'] ?? now()->addDays(30);
-
-                // ✅ Crear cuenta por cobrar - ahora usa venta_id
-                CuentaPorCobrar::create([
+                // Crear cuenta por cobrar
+                $cuentaPorCobrar = CuentaPorCobrar::create([
                     'venta_id' => $venta->codigo_venta,
                     'monto_total' => $total,
                     'monto_pagado' => 0,
                     'saldo_pendiente' => $total,
-                    'fecha_vencimiento' => $fechaVencimiento,
+                    'fecha_vencimiento' => now()->addDays(15), // Primera cuota en 15 días
                     'estado' => 'pendiente',
                 ]);
+
+                // Generar cuotas con el servicio
+                $numeroCuotas = $validated['numero_cuotas'] ?? 2;
+                $montoInicial = $validated['monto_inicial'] ?? null;
+
+                $cuotasGeneradas = $cuotasService->generarCuotas(
+                    $cuentaPorCobrar,
+                    $numeroCuotas,
+                    $montoInicial
+                );
+
+                // Si hay un monto inicial, se podría procesar inmediatamente
+                // o generar un QR de pago para que el cliente pague ahora
             }
 
             DB::commit();
 
+            $message = 'Venta registrada exitosamente. Número: ' . $venta->numero_venta;
+
+            if ($validated['tipo_pago'] === 'credito') {
+                $numeroCuotas = count($cuotasGeneradas ?? []);
+                $message .= " | {$numeroCuotas} cuotas generadas. Próximo pago: 15 días.";
+            }
+
             return redirect()->route('ventas.index')
-                ->with('success', 'Venta registrada exitosamente. Número: ' . $venta->numero_venta);
+                ->with('success', $message);
 
         } catch (\Exception $e) {
             DB::rollBack();

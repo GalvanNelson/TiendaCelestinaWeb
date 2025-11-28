@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\PagoController;
+use App\Http\Controllers\PagoFacilWebhookController;
+use App\Http\Controllers\PaymentController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -8,19 +10,33 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
-// Rutas protegidas con autenticación (web session para Inertia)
+/*
+|--------------------------------------------------------------------------
+| Payment Routes
+|--------------------------------------------------------------------------
+*/
+
 Route::middleware(['auth:sanctum'])->group(function () {
 
-    Route::post('/pagos/qr/generar', [PagoController::class, 'pagarConQR'])
-        ->name('pagos.qr.generar');  // ⭐ IMPORTANTE: El nombre
+    // Obtener métodos de pago disponibles
+    Route::get('/payment/methods', [PaymentController::class, 'getPaymentMethods']);
 
-    Route::post('/pagos/qr/verificar', [PagoController::class, 'verificarPago'])
-        ->name('pagos.qr.verificar');
+    // Generar QR para pago de venta
+    Route::post('/ventas/{venta}/generate-payment-qr', [PaymentController::class, 'generatePaymentQR']);
 
-    Route::post('/pagos/qr/confirmar', [PagoController::class, 'confirmarPagoQR'])
-        ->name('pagos.qr.confirmar');
+    // Generar QR para pago de cuota específica
+    Route::post('/cuotas/{cuota}/generate-payment-qr', [PaymentController::class, 'generateCuotaPaymentQR']);
+
+    // Consultar estado de transacción
+    Route::get('/transactions/{transaction}/status', [PaymentController::class, 'checkTransactionStatus']);
+
 });
 
-// Callback de Pago Fácil (sin autenticación - webhook público)
-Route::post('/pagos/callback', [PagoController::class, 'callbackPagoQR'])
-    ->name('pagos.callback');
+/*
+|--------------------------------------------------------------------------
+| PagoFácil Webhook (Sin autenticación - es llamado por PagoFácil)
+|--------------------------------------------------------------------------
+*/
+
+Route::post('/pagofacil/webhook', [PagoFacilWebhookController::class, 'handleWebhook'])
+    ->name('pagofacil.webhook');

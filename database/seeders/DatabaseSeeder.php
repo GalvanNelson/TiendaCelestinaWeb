@@ -84,7 +84,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             //UsersSeeder::class,
             MenuItemSeeder::class,
-            //ClienteSeed::class,
+            ClienteSeeder::class,
             CategoriaSeeder::class,
             UnidadMedidaSeeder::class,
             ProductoSeeder::class,

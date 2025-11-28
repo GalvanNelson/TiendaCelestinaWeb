@@ -137,13 +137,13 @@ class HandleInertiaRequests extends Middleware
                 'route' => 'cuentas-cobrar.index',
                 'permission' => PermissionEnum::VIEW_CUENTAS_COBRAR->value,
             ],
-            [
+            /*[
                 'id' => 'settings',
                 'label' => 'Configuración',
                 'icon' => 'Settings',
                 'route' => 'settings.index',
                 'permission' => null,
-            ],
+            ],*/
         ];
     }
 }

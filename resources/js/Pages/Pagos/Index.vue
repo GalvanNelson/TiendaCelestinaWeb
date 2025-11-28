@@ -48,16 +48,11 @@ const deleteForm = useForm({});
 // Métodos de pago
 const metodosPago = [
   { value: 'efectivo', label: 'Efectivo', icon: Banknote },
-  { value: 'transferencia', label: 'Transferencia', icon: CreditCard },
-  { value: 'tarjeta', label: 'Tarjeta', icon: CreditCard },
-  { value: 'cheque', label: 'Cheque', icon: CreditCard },
+  { value: 'qr', label: 'QR', icon: CreditCard },
 ];
 
 const metodosPagoFiltro = [
   { value: 'efectivo', label: 'Efectivo' },
-  { value: 'transferencia', label: 'Transferencia' },
-  { value: 'tarjeta', label: 'Tarjeta' },
-  { value: 'cheque', label: 'Cheque' },
   { value: 'qr', label: 'QR' },
 ];
 
@@ -169,9 +164,6 @@ const getMetodoPagoBadgeClass = (metodo) => {
   const classes = {
     efectivo: 'bg-green-100 text-green-800',
     qr: 'bg-blue-100 text-blue-800',
-    transferencia: 'bg-purple-100 text-purple-800',
-    tarjeta: 'bg-yellow-100 text-yellow-800',
-    cheque: 'bg-gray-100 text-gray-800',
   };
   return classes[metodo] || 'bg-gray-100 text-gray-800';
 };
@@ -180,9 +172,6 @@ const getMetodoPagoBadgeClass = (metodo) => {
 const getMetodoPagoLabel = (metodo) => {
   const labels = {
     efectivo: 'Efectivo',
-    transferencia: 'Transferencia',
-    tarjeta: 'Tarjeta',
-    cheque: 'Cheque',
     qr: 'QR'
   };
   return labels[metodo] || metodo;

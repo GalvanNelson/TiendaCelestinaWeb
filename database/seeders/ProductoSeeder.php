@@ -26,6 +26,7 @@ class ProductoSeeder extends Seeder
                 'nombre' => 'Coca-Cola 2L',
                 'categoria_codigo' => $categorias['Bebidas'],
                 'precio_unitario' => 12.00,
+                'stock' => 50,
                 'unidad_codigo' => $unidades['Lts'],
             ],
             [
@@ -33,6 +34,7 @@ class ProductoSeeder extends Seeder
                 'nombre' => 'Pepsi 2L',
                 'categoria_codigo' => $categorias['Bebidas'],
                 'precio_unitario' => 11.50,
+                'stock' => 20,
                 'unidad_codigo' => $unidades['Lts'],
             ],
             [
@@ -40,6 +42,7 @@ class ProductoSeeder extends Seeder
                 'nombre' => 'Agua Mineral Vital 2L',
                 'categoria_codigo' => $categorias['Bebidas'],
                 'precio_unitario' => 6.00,
+                'stock' => 100,
                 'unidad_codigo' => $unidades['Lts'],
             ],
             [
@@ -47,6 +50,7 @@ class ProductoSeeder extends Seeder
                 'nombre' => 'Cerveza Paceña 330ml',
                 'categoria_codigo' => $categorias['Bebidas'],
                 'precio_unitario' => 8.00,
+                'stock' => 80,
                 'unidad_codigo' => $unidades['ml'],
             ],
 
@@ -56,6 +60,7 @@ class ProductoSeeder extends Seeder
                 'nombre' => 'Arroz Grano de Oro 1kg',
                 'categoria_codigo' => $categorias['Granos y Cereales'],
                 'precio_unitario' => 7.50,
+                'stock' => 30,
                 'unidad_codigo' => $unidades['kg'],
             ],
             [
@@ -63,6 +68,7 @@ class ProductoSeeder extends Seeder
                 'nombre' => 'Azúcar San Aurelio 1kg',
                 'categoria_codigo' => $categorias['Granos y Cereales'],
                 'precio_unitario' => 6.50,
+                'stock' => 25,
                 'unidad_codigo' => $unidades['kg'],
             ],
             [
@@ -70,6 +76,7 @@ class ProductoSeeder extends Seeder
                 'nombre' => 'Fideo Nutrimax 500g',
                 'categoria_codigo' => $categorias['Granos y Cereales'],
                 'precio_unitario' => 5.00,
+                'stock' => 40,
                 'unidad_codigo' => $unidades['gr'],
             ],
 
@@ -79,6 +86,7 @@ class ProductoSeeder extends Seeder
                 'nombre' => 'Harina Flor 1kg',
                 'categoria_codigo' => $categorias['Harinas'],
                 'precio_unitario' => 8.00,
+                'stock' => 30,
                 'unidad_codigo' => $unidades['kg'],
             ],
             [
@@ -86,6 +94,7 @@ class ProductoSeeder extends Seeder
                 'nombre' => 'Pan de Batalla Unidad',
                 'categoria_codigo' => $categorias['Panadería'],
                 'precio_unitario' => 0.50,
+                'stock' => 100,
                 'unidad_codigo' => $unidades['Unidad'],
             ],
 
@@ -95,6 +104,7 @@ class ProductoSeeder extends Seeder
                 'nombre' => 'Aceite Cil 1L',
                 'categoria_codigo' => $categorias['Aceites'],
                 'precio_unitario' => 15.00,
+                'stock' => 50,
                 'unidad_codigo' => $unidades['Lts'],
             ],
             [
@@ -102,6 +112,7 @@ class ProductoSeeder extends Seeder
                 'nombre' => 'Aceite Fino 900ml',
                 'categoria_codigo' => $categorias['Aceites'],
                 'precio_unitario' => 13.50,
+                'stock' => 40,
                 'unidad_codigo' => $unidades['ml'],
             ],
 
@@ -111,6 +122,7 @@ class ProductoSeeder extends Seeder
                 'nombre' => 'Leche PIL 1L',
                 'categoria_codigo' => $categorias['Lácteos'],
                 'precio_unitario' => 7.50,
+                'stock' => 60,
                 'unidad_codigo' => $unidades['Lts'],
             ],
             [
@@ -118,6 +130,7 @@ class ProductoSeeder extends Seeder
                 'nombre' => 'Yogurt Bella Holanda 1L',
                 'categoria_codigo' => $categorias['Lácteos'],
                 'precio_unitario' => 9.00,
+                'stock' => 50,
                 'unidad_codigo' => $unidades['Lts'],
             ],
             [
@@ -125,6 +138,7 @@ class ProductoSeeder extends Seeder
                 'nombre' => 'Queso Edam 250g',
                 'categoria_codigo' => $categorias['Lácteos'],
                 'precio_unitario' => 18.00,
+                'stock' => 20,
                 'unidad_codigo' => $unidades['gr'],
             ],
 
@@ -134,6 +148,7 @@ class ProductoSeeder extends Seeder
                 'nombre' => 'Atún Van Camps 170g',
                 'categoria_codigo' => $categorias['Conservas'],
                 'precio_unitario' => 10.00,
+                'stock' => 25,
                 'unidad_codigo' => $unidades['gr'],
             ],
             [
@@ -141,6 +156,7 @@ class ProductoSeeder extends Seeder
                 'nombre' => 'Sardina Isabel 425g',
                 'categoria_codigo' => $categorias['Conservas'],
                 'precio_unitario' => 12.00,
+                'stock' => 30,
                 'unidad_codigo' => $unidades['gr'],
             ],
             [
@@ -148,6 +164,7 @@ class ProductoSeeder extends Seeder
                 'nombre' => 'Arvejas Enlatadas Arcor 300g',
                 'categoria_codigo' => $categorias['Conservas'],
                 'precio_unitario' => 8.50,
+                'stock' => 40,
                 'unidad_codigo' => $unidades['gr'],
             ],
 
@@ -157,6 +174,7 @@ class ProductoSeeder extends Seeder
                 'nombre' => 'Sal Embol 1kg',
                 'categoria_codigo' => $categorias['Condimentos'],
                 'precio_unitario' => 3.00,
+                'stock' => 100,
                 'unidad_codigo' => $unidades['kg'],
             ],
             [
@@ -164,6 +182,7 @@ class ProductoSeeder extends Seeder
                 'nombre' => 'Comino Molido 100g',
                 'categoria_codigo' => $categorias['Especias'],
                 'precio_unitario' => 5.50,
+                'stock' => 40,
                 'unidad_codigo' => $unidades['gr'],
             ],
 
@@ -173,6 +192,7 @@ class ProductoSeeder extends Seeder
                 'nombre' => 'Papas Pringles 124g',
                 'categoria_codigo' => $categorias['Snacks'],
                 'precio_unitario' => 15.00,
+                'stock' => 50,
                 'unidad_codigo' => $unidades['gr'],
             ],
         ];

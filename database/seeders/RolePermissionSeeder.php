@@ -49,8 +49,12 @@ class RolePermissionSeeder extends Seeder
             PermissionEnum::EDIT_CLIENTS->value,
 
             PermissionEnum::VIEW_PRODUCTS->value,
+            PermissionEnum::CREATE_PRODUCTS->value,
 
             PermissionEnum::VIEW_CATEGORIAS->value,
+            PermissionEnum::CREATE_CATEGORIAS->value,
+
+
 
             PermissionEnum::VIEW_SALES->value,
             PermissionEnum::CREATE_SALES->value,
@@ -75,8 +79,10 @@ class RolePermissionSeeder extends Seeder
         // Los clientes no tienen permisos administrativos
         // Solo pueden ver sus propios datos y realizar compras
         $clientePermissions = [
-            // Por ahora sin permisos administrativos
-            // Se pueden agregar permisos específicos de cliente más adelante
+            PermissionEnum::VIEW_SALES->value,
+            PermissionEnum::CREATE_SALES->value,
+            PermissionEnum::VIEW_PAGOS->value,
+            PermissionEnum::CREATE_PAGOS->value,
         ];
 
         if (!empty($clientePermissions)) {

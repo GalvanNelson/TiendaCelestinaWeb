@@ -81,3 +81,10 @@ php artisan route:clear
 php artisan view:clear
 php artisan optimize:clear
 
+
+## para produccion
+git fetch --all
+git reset --hard origin/main
+
+base: '/inf513/grupo14sa/TiendaCelestinaWeb/public/build/',
+

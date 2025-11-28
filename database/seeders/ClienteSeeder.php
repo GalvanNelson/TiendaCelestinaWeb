@@ -47,7 +47,7 @@ class ClienteSeeder extends Seeder
 
         $this->command->info('Creando 50 clientes...');
 
-        for ($i = 0; $i < 50; $i++) {
+        for ($i = 0; $i < 20; $i++) {
             $nombre = $nombres[$i];
             $apellido = $apellidos[$i];
             $email = strtolower(str_replace(' ', '', $nombre)) . '.' . strtolower($apellido) . '@ejemplo.com';
@@ -66,6 +66,6 @@ class ClienteSeeder extends Seeder
             $cliente->roles()->attach($clienteRole->id);
         }
 
-        $this->command->info('50 clientes creados exitosamente.');
+        $this->command->info('20 clientes creados exitosamente.');
     }
 }
