@@ -82,13 +82,11 @@ const generarQR = async () => {
     success.value = null;
 
     try {
-        // ✅ Usando Ziggy para generar la ruta
-        const response = await axios.post(route('pagos.qr.generar'), formData.value, {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json'
-            }
-        });
+        // Obtener CSRF cookie primero
+        await axios.get('/sanctum/csrf-cookie');
+
+        // Hacer la petición
+        const response = await axios.post(route('pagos.qr.generar'), formData.value);
 
         if (response.data.success) {
             qrGenerado.value = response.data.data.qrImage;
@@ -96,25 +94,18 @@ const generarQR = async () => {
             pagoId.value = response.data.data.pago_id;
             success.value = '¡QR generado exitosamente!';
 
-            // Iniciar verificación automática
             iniciarVerificacionAutomatica();
         }
     } catch (err) {
         console.error('Error completo:', err);
 
-        // Manejo de errores mejorado
-        if (err.response?.status === 422) {
-            // Errores de validación
+        if (err.response?.status === 401) {
+            error.value = 'No estás autenticado. Por favor, recarga la página.';
+        } else if (err.response?.status === 419) {
+            error.value = 'Tu sesión ha expirado. Por favor, recarga la página.';
+        } else if (err.response?.status === 422) {
             const errors = err.response.data.errors;
-            if (errors) {
-                error.value = Object.values(errors).flat().join(', ');
-            } else {
-                error.value = err.response.data.message || 'Error de validación';
-            }
-        } else if (err.response?.status === 401) {
-            error.value = 'No estás autenticado. Por favor, inicia sesión nuevamente.';
-        } else if (err.response?.status === 404) {
-            error.value = 'No se encontró el endpoint. Verifica que las rutas estén configuradas correctamente.';
+            error.value = errors ? Object.values(errors).flat().join(', ') : 'Error de validación';
         } else {
             error.value = err.response?.data?.message || 'Error al generar el QR';
         }
