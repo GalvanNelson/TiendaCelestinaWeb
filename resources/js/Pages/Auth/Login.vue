@@ -19,14 +19,18 @@ const form = useForm({
     remember: false,
 });
 
-const submit = () => {
+const submit = async () => {
+    // Genera la cookie XSRF-TOKEN
+    await axios.get('/sanctum/csrf-cookie');
+
     form.transform(data => ({
         ...data,
-        remember: form.remember ? 'on' : '',
+        remember: data.remember ? 'on' : '',
     })).post(route('login'), {
         onFinish: () => form.reset('password'),
     });
 };
+
 </script>
 
 <template>
