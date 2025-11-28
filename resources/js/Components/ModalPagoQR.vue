@@ -1,5 +1,6 @@
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onUnmounted } from 'vue';
+import { route } from 'ziggy-js';
 import axios from 'axios';
 import Modal from '@/Components/Modal.vue';
 import InputLabel from '@/Components/InputLabel.vue';
@@ -81,7 +82,8 @@ const generarQR = async () => {
     success.value = null;
 
     try {
-        const response = await axios.post('/api/pagos/qr/generar', formData.value, {
+        // ✅ Usando Ziggy para generar la ruta
+        const response = await axios.post(route('pagos.qr.generar'), formData.value, {
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
                 'Accept': 'application/json'
@@ -98,8 +100,24 @@ const generarQR = async () => {
             iniciarVerificacionAutomatica();
         }
     } catch (err) {
-        error.value = err.response?.data?.message || 'Error al generar el QR';
-        console.error('Error al generar QR:', err);
+        console.error('Error completo:', err);
+
+        // Manejo de errores mejorado
+        if (err.response?.status === 422) {
+            // Errores de validación
+            const errors = err.response.data.errors;
+            if (errors) {
+                error.value = Object.values(errors).flat().join(', ');
+            } else {
+                error.value = err.response.data.message || 'Error de validación';
+            }
+        } else if (err.response?.status === 401) {
+            error.value = 'No estás autenticado. Por favor, inicia sesión nuevamente.';
+        } else if (err.response?.status === 404) {
+            error.value = 'No se encontró el endpoint. Verifica que las rutas estén configuradas correctamente.';
+        } else {
+            error.value = err.response?.data?.message || 'Error al generar el QR';
+        }
     } finally {
         loading.value = false;
     }
@@ -109,9 +127,11 @@ const verificarPago = async () => {
     if (!numeroTransaccion.value || verificando.value) return;
 
     verificando.value = true;
+    error.value = null;
 
     try {
-        const response = await axios.post('/api/pagos/qr/verificar', {
+        // ✅ Usando Ziggy para verificar pago
+        const response = await axios.post(route('pagos.qr.verificar'), {
             transactionId: numeroTransaccion.value
         });
 
@@ -123,10 +143,14 @@ const verificarPago = async () => {
             } else if (estado === 'rechazado' || estado === 'cancelado') {
                 detenerVerificacion();
                 error.value = `Pago ${estado}. Por favor, intente nuevamente.`;
+            } else {
+                // Estado pendiente, continuar verificando
+                console.log('Estado del pago:', estado);
             }
         }
     } catch (err) {
         console.error('Error al verificar:', err);
+        // No mostramos error al usuario para no interrumpir la verificación automática
     } finally {
         verificando.value = false;
     }
@@ -136,7 +160,8 @@ const confirmarPago = async () => {
     if (!pagoId.value) return;
 
     try {
-        const response = await axios.post('/api/pagos/qr/confirmar', {
+        // ✅ Usando Ziggy para confirmar pago
+        const response = await axios.post(route('pagos.qr.confirmar'), {
             pago_id: pagoId.value,
             transactionId: numeroTransaccion.value
         });
@@ -169,6 +194,9 @@ const iniciarVerificacionAutomatica = () => {
 
         if (intentos >= maxIntentos || pagoConfirmado.value) {
             detenerVerificacion();
+            if (intentos >= maxIntentos && !pagoConfirmado.value) {
+                error.value = 'Tiempo de espera agotado. Por favor, verifica el pago manualmente.';
+            }
             return;
         }
 
@@ -196,6 +224,8 @@ const resetearFormulario = () => {
     error.value = null;
     success.value = null;
     pagoConfirmado.value = false;
+    loading.value = false;
+    verificando.value = false;
 };
 
 const pagarTodo = () => {
@@ -203,7 +233,6 @@ const pagarTodo = () => {
 };
 
 // Limpiar al desmontar
-import { onUnmounted } from 'vue';
 onUnmounted(() => {
     detenerVerificacion();
 });

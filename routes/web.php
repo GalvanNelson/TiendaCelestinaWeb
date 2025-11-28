@@ -133,13 +133,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // ========================================
     // PAGOS
     // ========================================
-    Route::middleware(['auth'])->group(function () {
-        Route::get('/pagos', [PagoController::class, 'index'])->name('pagos.index');
-        Route::post('/pagos', [PagoController::class, 'store'])->name('pagos.store');
-        Route::delete('/pagos/{pago}', [PagoController::class, 'destroy'])->name('pagos.destroy');
-    });
-
-
+    Route::get('/pagos', [PagoController::class, 'index'])->name('pagos.index');
+    Route::post('/pagos', [PagoController::class, 'store'])->name('pagos.store');
+    Route::delete('/pagos/{pago}', [PagoController::class, 'destroy'])->name('pagos.destroy');
+    Route::post('/pagos/pago-qr/{venta}', [PagoController::class, 'generarPagoQR'])->name('pagos.pago-qr');
 
     // ========================================
     // CUENTAS POR COBRAR

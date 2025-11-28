@@ -1,0 +1,98 @@
+<?php
+// Puede llamarse como sea, no necesariamente /callback
+    public function notificacionPagoFacil(Request $toRequest)
+    {
+        LogsController::guardarLog(
+            "Datos Recibidos en loRequest para el callback pagofacil:",
+            $toRequest->all()
+        );
+
+        try {
+            // Obtener los parámetros del request
+            $lnTransaccion = $toRequest->input('PedidoID');
+            $ldFecha = $toRequest->input('Fecha');
+            $ldHora = $toRequest->input('Hora');
+            $lnEstado = $toRequest->input('Estado');
+            $lnMetodoPago = $toRequest->input('MetodoPago');
+
+            // Encuentra la transacción correspondiente
+            $loResTransaccion = mTransacciones::find($lnTransaccion);
+            LogsController::guardarLog(
+                "metodo callback",
+                "Datos de la transaccion para actualizar seguin el estado ",
+                $loResTransaccion
+            );
+
+            if (!$loResTransaccion) {
+                // Si la transacción no existe, devolvemos un error
+                return response()->json([
+                    'error' => 1,
+                    'status' => 0,
+                    'message' => 'Transacción no encontrada',
+                    'messageMostrar' => 0,
+                    'messageSistema' => '',
+                    'values' => false
+                ], 200);
+            }
+
+            // Verifica el estado del pago basado en el paquete de PagoFacil
+            if ($lnEstado == 2) { //21 indica que el pago fue realizado con éxito
+
+                //Se ejecuta el proceso interno (mi lógica de negocio) cuando se confirma que el cliente realizó el pago
+                $loRespuestaEjecutarPedidoCliente = $this->ejecutarDarPedidoCliente($lnTransaccion);
+
+                // Guarda un log de la transacción actualizada (opcional)
+                LogsController::guardarLog(
+                    'Se hizo el desembolso del producto al cliente porque se recibió la confirmación de pago',
+                    ['transaction_id' => $lnTransaccion],
+                    ['lnEstado' => $lnEstado],
+                    ['loRespuestaEjecutarPedidoCliente' => $loRespuestaEjecutarPedidoCliente]
+                );
+
+                $loRespuestaActualizar = $this->actualizarTransaccionAPagado(
+                    $lnTransaccion,
+                    $ldFecha,
+                    $ldHora,
+                    $lnEstado,
+                    $lnMetodoPago,
+                );
+                LogsController::guardarLog(
+                    "Se actualizo la Transaccion",
+                    $loRespuestaActualizar
+                );
+
+
+                // Devuelve un paquete de éxito
+                return response()->json([
+                    'error' => 0,
+                    'status' => 1,
+                    'message' => 'Pago realizado correctamente',
+                    'messageMostrar' => 0,
+                    'messageSistema' => '',
+                    'values' => true
+                ], 200);
+            }
+        } catch (\Exception $e) {
+            // Captura cualquier excepción y devuelve un error
+            LogsController::guardarLog('Error en el método callback: ' . $e->getMessage(), [
+                'stack' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'error' => 1,
+                'status' => 0,
+                'message' => 'Ocurrió un error al procesar la transacción',
+                'messageMostrar' => 0,
+                'messageSistema' => $e->getMessage(),
+                'values' => false
+            ], 200);
+        }
+    }
+
+
+
+    // MI RUTA
+Route::post('/notificacionesPagoFacil', [TransaccionController::class, 'notificacionPagoFacil']);
+
+// Entonces mi url callback quedaría
+https://www.tecnoweb.org.bo/inf513/grupo01sc/tecnoweb/public/api/notificacionesPagoFacil
